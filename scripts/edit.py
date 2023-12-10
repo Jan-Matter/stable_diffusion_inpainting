@@ -7,6 +7,11 @@ from PIL import Image
 from imwatermark import WatermarkEncoder
 from pytorch_lightning import seed_everything
 
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).parent.parent))
+
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.plms import PLMSSampler
 
