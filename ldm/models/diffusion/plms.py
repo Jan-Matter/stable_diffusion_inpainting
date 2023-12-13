@@ -17,7 +17,7 @@ from ldm.modules.diffusionmodules.util import (
 import clip
 from einops import rearrange
 import random
-from models.facial_recognition.model_irse import Backbone
+from scripts.models.facial_recognition.model_irse import Backbone
 
 
 class VGGPerceptualLoss(torch.nn.Module):

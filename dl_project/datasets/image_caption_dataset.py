@@ -7,7 +7,11 @@ class ImageCaptionDataset(Dataset):
         pass
 
     def __len__(self):
-        # return the number of image caption pairs
+        """
+        Returns:
+            Number of image caption pairs in the dataset
+        """
+        pass
 
     def __getitem__(self, idx):
         """
