@@ -1,2 +1,6 @@
 *.pt
 *.ckpt
+*.pyc
+models/
+pyenv/
+dl_project/data
