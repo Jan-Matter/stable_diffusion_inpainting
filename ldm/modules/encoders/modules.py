@@ -7,7 +7,10 @@ from transformers import CLIPTokenizer, CLIPTextModel
 import kornia
 
 from ldm.modules.x_transformer import Encoder, TransformerWrapper  # TODO: can we directly rely on lucidrains code and simply add this as a reuirement? --> test
-
+try:
+    from dl_project.scripts.train_direction_models import DEVICE
+except:
+    DEVICE = None
 
 class AbstractEncoder(nn.Module):
     def __init__(self):
@@ -140,7 +143,11 @@ class FrozenCLIPEmbedder(AbstractEncoder):
         super().__init__()
         self.tokenizer = CLIPTokenizer.from_pretrained(version)
         self.transformer = CLIPTextModel.from_pretrained(version)
-        self.device = device
+        global DEVICE
+        if DEVICE is not None:
+            self.device = DEVICE
+        else:
+            self.device = device
         self.max_length = max_length
         self.freeze()
 

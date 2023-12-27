@@ -19,7 +19,7 @@ from dl_project.direction_models.direction_model import DirectionModel
 from dl_project.loss.contrastive_loss import ContrastiveLoss
 from dl_project.datasets.image_caption_dataset import ImageCaptionDataset
 
-
+DEVICE = 'cuda' # change it to cpu allows running on cpu
 
 def load_img(path):
     image = Image.open(path).convert("RGB")
@@ -48,7 +48,8 @@ def load_model_from_config(config, ckpt, verbose=False):
         print("unexpected keys:")
         print(u)
 
-    model.cuda()
+    global DEVICE
+    model.to(DEVICE)
     model.eval()
     return model
 
@@ -63,7 +64,17 @@ def final_encode_and_save_noise(opt):
     if not os.path.exists(noise_saved_path):
         os.makedirs(noise_saved_path, exist_ok=True)
     noise_saved_path += "/noise.pt"
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    global DEVICE
+    if DEVICE == 'cuda':
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            DEVICE = 'cpu'
+            device = torch.device(DEVICE)
+    else:
+        device = torch.device(DEVICE)
+
     model = load_model_from_config(
         OmegaConf.load("configs/stable-diffusion/v1-inference.yaml"),
         "models/ldm/stable-diffusion-v1/model.ckpt",
@@ -122,7 +133,17 @@ def final_edit_image(opt):
     if not os.path.exists(image_output_path):
         os.makedirs(image_output_path, exist_ok=True)
         # os.makedirs(image_output_path + "/each", exist_ok=True)
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    global DEVICE
+    if DEVICE == 'cuda':
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            DEVICE = 'cpu'
+            device = torch.device(DEVICE)
+    else:
+        device = torch.device(DEVICE)
+
     model = load_model_from_config(
         OmegaConf.load("configs/stable-diffusion/v1-inference.yaml"),
         "models/ldm/stable-diffusion-v1/model.ckpt",
