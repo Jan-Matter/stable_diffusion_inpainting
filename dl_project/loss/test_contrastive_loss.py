@@ -33,6 +33,11 @@ def main():
     )
 
     # replace generator and projector using those for diffusion models
+    """
+    Install additional packages using the following commands:
+    pip install pytorch-pretrained-biggan==0.1.1
+    pip install nltk==3.5
+    """
     dummy_generator = BigGANGenerator(resolution='256', device=x.device, truncation=0.4, class_name='bulbul', feature_layer='generator.layers.4')
     dummy_projector = IdentityProjector(normalize=True)
     ct_loss = ContrastiveLoss(generator=dummy_generator, projector=dummy_projector, model=model, K=direction_count)
