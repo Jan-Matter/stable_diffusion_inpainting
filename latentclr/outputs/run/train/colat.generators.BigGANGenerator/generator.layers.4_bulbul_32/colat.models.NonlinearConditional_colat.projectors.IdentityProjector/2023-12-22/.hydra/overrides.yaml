@@ -1,0 +1,7 @@
+- k=32
+- generator=biggan
+- generator.feature_layer=generator.layers.4
+- generator.class_name=bulbul
+- model=nonlinear
+- hparams.batch_size=5
+- model.alpha='[-3.0,+3.0]'
