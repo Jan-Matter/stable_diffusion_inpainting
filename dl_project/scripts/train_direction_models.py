@@ -21,6 +21,52 @@ from dl_project.datasets.image_caption_dataset import ImageCaptionDataset
 
 DEVICE = 'cuda' # change it to cpu allows running on cpu
 
+class DirectionModelTrainer:
+     
+    def __init__(self, configs):
+        self.model = DirectionModel(configs['model'])
+        self.loss = ContrastiveLoss(configs['loss'])
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=configs['lr'])
+        self.device = torch.device(configs['device'])
+        self.model.to(self.device)
+
+        dataset = ImageCaptionDataset(configs['dataset'])
+        train_size = int(configs['train_size'] * len(dataset))
+        train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
+        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=configs['batch_size'], shuffle=True)
+        self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=configs['batch_size'], shuffle=False)
+        self.epochs = configs['epochs']
+
+
+    
+    def train(self, train_loader, val_loader, epochs):
+        for epoch in range(self.epochs):
+            self.model.train()
+            for batch_idx, (images, captions) in enumerate(train_loader):
+                images, captions = images.to(self.device), captions.to(self.device)
+                self.optimizer.zero_grad()
+                outputs = self.model(images, captions)
+                loss = self.loss(outputs)
+                loss.backward()
+                self.optimizer.step()
+                if batch_idx % 100 == 0:
+                    print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
+            self.eval(val_loader)
+            torch.save(self.model.state_dict(), f'models/direction_model_{epoch}.pt')
+    
+    def __load_img(self, image):
+        image = Image.open(path).convert("RGB")
+        w, h = image.size
+        print(f"loaded input image of size ({w}, {h}) from {path}")
+        w, h = map(lambda x: x - x % 32, (w, h))  # resize to integer multiple of 32
+        image = image.resize((w, h), resample=PIL.Image.LANCZOS)
+        image = np.array(image).astype(np.float32) / 255.0
+        image = image[None].transpose(0, 3, 1, 2)
+        image = torch.from_numpy(image)
+        return 2.0 * image - 1.0
+    
+
+
 def load_img(path):
     image = Image.open(path).convert("RGB")
     w, h = image.size
