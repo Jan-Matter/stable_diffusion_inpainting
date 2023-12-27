@@ -1,0 +1,1008 @@
+[2023-12-27 00:04:19,730]- Configuration:
+
+[2023-12-27 00:04:19,735]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:04:19,735]- ========================================
+
+[2023-12-27 00:04:21,807]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:04:21,809]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:04:22,250]- Beginning training
+[2023-12-27 00:10:28,045]- Configuration:
+
+[2023-12-27 00:10:28,050]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:10:28,050]- ========================================
+
+[2023-12-27 00:10:29,985]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:10:29,987]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:10:30,359]- Beginning training
+[2023-12-27 00:12:08,665]- Configuration:
+
+[2023-12-27 00:12:08,669]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:12:08,669]- ========================================
+
+[2023-12-27 00:12:10,570]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:12:10,571]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:12:10,940]- Beginning training
+[2023-12-27 00:14:42,910]- Configuration:
+
+[2023-12-27 00:14:42,914]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:14:42,914]- ========================================
+
+[2023-12-27 00:14:44,829]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:14:44,830]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:14:45,192]- Beginning training
+[2023-12-27 00:16:08,209]- Configuration:
+
+[2023-12-27 00:16:08,214]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:16:08,214]- ========================================
+
+[2023-12-27 00:16:10,152]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:16:10,154]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:16:10,523]- Beginning training
+[2023-12-27 00:32:36,652]- Configuration:
+
+[2023-12-27 00:32:36,657]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:32:36,657]- ========================================
+
+[2023-12-27 00:32:38,643]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:32:38,644]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:32:39,019]- Beginning training
+[2023-12-27 00:51:50,523]- Configuration:
+
+[2023-12-27 00:51:50,528]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:51:50,528]- ========================================
+
+[2023-12-27 00:51:52,490]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:51:52,492]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:51:52,865]- Beginning training
+[2023-12-27 00:55:10,052]- Configuration:
+
+[2023-12-27 00:55:10,057]- model:
+  _target_: colat.models.NonlinearConditional
+  normalize: true
+  alpha: '[-3.0,+3.0]'
+  depth: 3
+  size: 128
+loss:
+  _target_: colat.loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+generator:
+  _target_: colat.generators.BigGANGenerator
+  resolution: 256
+  device: cpu
+  truncation: 0.4
+  class_name: bulbul
+  feature_layer: generator.layers.4
+projector:
+  _target_: colat.projectors.IdentityProjector
+  normalize: true
+hparams:
+  batch_size: 5
+  iterations: 10000
+  grad_clip_max_norm: null
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.001
+    weight_decay: 0.001
+  scheduler:
+    _target_: torch.optim.lr_scheduler.MultiStepLR
+    milestones:
+    - 1000
+    - 5000
+    gamma: 0.2
+checkpoint: null
+tensorboard: true
+auto_cpu_if_no_gpu: true
+device: cpu
+mixed_precision: false
+save: true
+eval_freq: 1000
+eval_iters: 100
+k: 32
+feed_layers: null
+train_projector: true
+
+[2023-12-27 00:55:10,057]- ========================================
+
+[2023-12-27 00:55:11,981]- loading model /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256 from cache at /Users/liyang/latentclr/colat/generators/checkpoints/biggan-deep-256/pytorch_model.bin
+[2023-12-27 00:55:11,982]- Model config {
+  "attention_layer_position": 8,
+  "channel_width": 128,
+  "class_embed_dim": 128,
+  "eps": 0.0001,
+  "layers": [
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      16
+    ],
+    [
+      false,
+      16,
+      16
+    ],
+    [
+      true,
+      16,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      8
+    ],
+    [
+      false,
+      8,
+      8
+    ],
+    [
+      true,
+      8,
+      4
+    ],
+    [
+      false,
+      4,
+      4
+    ],
+    [
+      true,
+      4,
+      2
+    ],
+    [
+      false,
+      2,
+      2
+    ],
+    [
+      true,
+      2,
+      1
+    ]
+  ],
+  "n_stats": 51,
+  "num_classes": 1000,
+  "output_dim": 256,
+  "z_dim": 128
+}
+
+[2023-12-27 00:55:12,352]- Beginning training

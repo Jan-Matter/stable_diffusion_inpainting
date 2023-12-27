@@ -1,6 +1,10 @@
 import torch
-from net_utils import create_mlp
-from abstract import Model
+try:
+    from net_utils import create_mlp
+    from abstract import Model
+except:
+    from dl_project.direction_models.net_utils import create_mlp
+    from dl_project.direction_models.abstract import Model
 
 
 class DirectionModel(Model):
