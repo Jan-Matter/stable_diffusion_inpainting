@@ -15,7 +15,7 @@ USER_AGENT = get_datasets_user_agent()
 class ImageCaptionDataset:
 
     def __init__(self, configs):
-
+        self.configs = configs
         if self.configs['dataset'] == 'conceptual_captions':
             self.dataset = load_dataset("conceptual_captions")
             self.dataset = self.dataset.map(
@@ -26,7 +26,7 @@ class ImageCaptionDataset:
             )
             self.dataset.with_format("torch")
         elif self.configs['dataset'] == 'celeba':
-            self.dataset = CelebA("data/celeba")
+            self.dataset = CelebA("data/celeba", download=True, split='train')
         elif self.configs['dataset'] == 'lsun_church':
             self.lsun_church_dataset = LSUN("data/lsun_church", "church")
         else:
@@ -41,9 +41,9 @@ class ImageCaptionDataset:
         return self.dataset[idx]
     
 
-    def fetch_images(batch, num_threads, timeout=None, retries=0):
+    def __fetch_images(self, batch, num_threads, timeout=None, retries=0):
         fetch_single_image_with_args = partial(
-            fetch_single_image, timeout=timeout, retries=retries
+            self.__fetch_single_image, timeout=timeout, retries=retries
         )
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
@@ -71,7 +71,7 @@ class ImageCaptionDataset:
 
 if __name__ == '__main__':
     configs = {
-        'dataset': 'conceptual_captions'
+        'dataset': 'celeba'
     }
     dataset = ImageCaptionDataset(configs)
     print(dataset[0])
