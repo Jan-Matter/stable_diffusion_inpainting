@@ -47,6 +47,12 @@ def main():
     print("Accuracy:    ", acc.item())
     print("Loss:        ", loss.item())
 
+    output_from_direction_model = model(x)
+    acc_no_gen, loss_no_gen = ct_loss.contrastive_loss_without_generator(output_from_direction_model, torch.randn(output_from_direction_model.shape))
+    print("Accuracy without generator:  ", acc_no_gen.item())
+    print("Loss without generator:      ", loss_no_gen.item())
+
 
 if __name__ == "__main__":
     main()
+
