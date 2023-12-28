@@ -13,16 +13,16 @@ class ContrastiveLoss:
         self.generator = generator
         self.projector = projector
 
-    def prepare_features(self, y_direction1, y_direction2):
+    def prepare_features(self, y_direction, y_original):
 
         features = []
 
-        for i in range(y_direction1.shape[0]):
+        for i in range(y_direction.shape[0]):
 
-            for j in range(y_direction1.shape[1]):
+            for j in range(y_direction.shape[1]):
                 # 1. get features
-                feats_1 = y_direction1[i][j]
-                feats_2 = y_direction2[i][j]
+                feats_1 = y_direction[i][j]
+                feats_2 = y_original[i][j]
                 # 2. project features to a space where the
                 # contrastive loss is applied
                 projected_feats_1 = feats_1
@@ -38,22 +38,20 @@ class ContrastiveLoss:
 
         return features
 
-    def contrastive_loss_without_generator(self, y_direction1, y_direction2):
+    def contrastive_loss_without_generator(self, y_direction, y_original):
         """
         Args:
-            y_direction1: torch.tensor(batch_size, direction_count, latent_diff_dim)
-            y_direction2: torch.tensor(batch_size, direction_count, latent_diff_dim)
+            y_direction1: torch.tensor(batch_size, direction_count, K, latent_diff_dim)
+            y_direction2: torch.tensor(batch_size, direction_count, K, latent_diff_dim)
         Returns:
-            loss: torch.tensor(batch_size, ) (1d tensor of batch_size length)
-        """
-        """
+            loss: torch.tensor(batch_size, direction_count) (1d tensor of batch_size length)
         """
         ABS = True
         TEMP = 0.5
-        K = y_direction1.shape[1]
+        K = y_direction.shape[2]
         REDUCE = ['mean', 'sum'][0]
 
-        out = self.prepare_features(y_direction1, y_direction2)
+        out = self.prepare_features(y_direction, y_original)
 
         n_samples = len(out)
 
@@ -86,8 +84,8 @@ class ContrastiveLoss:
         else:
             raise ValueError("Only mean and sum is supported for reduce method")
 
-        acc = (pos > neg).float().mean()
-        loss = -torch.log(pos / neg).mean()
+        acc = (pos > neg).float()
+        loss = -torch.log(pos / neg)
 
         return acc, loss
 
