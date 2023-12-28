@@ -1,11 +1,13 @@
 import argparse, os
 import torch
+from  torch.nn.parallel import data_parallel
 import numpy as np
 import PIL
 from omegaconf import OmegaConf
 from PIL import Image
 from imwatermark import WatermarkEncoder
 from pytorch_lightning import seed_everything
+import random
 
 from pathlib import Path
 import sys
@@ -19,43 +21,87 @@ from dl_project.direction_models.direction_model import DirectionModel
 from dl_project.loss.contrastive_loss import ContrastiveLoss
 from dl_project.datasets.image_caption_dataset import ImageCaptionDataset
 
-DEVICE = 'cuda' # change it to cpu allows running on cpu
-
 class DirectionModelTrainer:
      
     def __init__(self, configs):
-        self.model = DirectionModel(configs['model'])
-        self.loss = ContrastiveLoss(configs['loss'])
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=configs['lr'])
+        self.configs = configs
+        self.direction_models = [DirectionModel(**configs['model']['direction_model']) for _ in range(configs['num_direction_models'])]
+        self.ldm_model = self.__load_model_from_config(configs['model']['ldm_model'])
+        self.ldm_sampler = PLMSSampler(self.ldm_model)
+        self.loss = ContrastiveLoss(**configs['loss'])
+        self.optimizers = [torch.optim.Adam(model, lr=configs['lr']) for model in self.direction_models]
         self.device = torch.device(configs['device'])
         self.model.to(self.device)
 
         dataset = ImageCaptionDataset(configs['dataset'])
         train_size = int(configs['train_size'] * len(dataset))
         train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
-        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=configs['batch_size'], shuffle=True)
-        self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=configs['batch_size'], shuffle=False)
+        self.batch_size = configs['batch_size']
+        self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
         self.epochs = configs['epochs']
 
+        #defaults: strength = 0.8 and ddim_steps = 50 and scale = 5.0
+        self.t_enc = int(configs['strength'] * configs['ddim_steps'])
+        self.scale = configs['scale']
+        self.uc = self.ldm_model.get_learned_conditioning(self.batch_size * [""])
+
+        seed_everything(configs['seed'])
+
 
     
-    def train(self, train_loader, val_loader, epochs):
+    def train(self):
         for epoch in range(self.epochs):
             self.model.train()
-            for batch_idx, (images, captions) in enumerate(train_loader):
+            for batch_idx, x in enumerate(self.train_loader):
+                trained_model_idx = random.randint(0, len(self.direction_models) - 1)
+                self.optimizers[trained_model_idx].zero_grad()
+
                 images, captions = images.to(self.device), captions.to(self.device)
-                self.optimizer.zero_grad()
-                outputs = self.model(images, captions)
-                loss = self.loss(outputs)
+                captions_enc = self.ldm_model.get_learned_conditioning(captions)
+                noised_images_enc = self.ldm_model.get_first_stage_encoding(
+                    self.ldm_model.encode_first_stage(images)
+                )
+                
+                trained_direction_c_ground = self.direction_models[trained_model_idx](captions_enc)
+
+                with torch.no_grad():
+                    trained_direction_c_same = self.direction_models[trained_model_idx](captions_enc)
+                    trained_direction_c_diff = self.direction_models[trained_model_idx](captions_enc)
+
+                decoded_latent_ground = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
+                decoded_latent_same = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
+                decoded_latent_diff = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
+                
+                loss_same = self.loss.contrastive_loss(noised_images_enc, decoded_latent_same)
+                loss_diff = self.loss.contrastive_loss(noised_images_enc, decoded_latent_diff)
+                loss = loss_same - loss_diff
                 loss.backward()
-                self.optimizer.step()
+                self.optimizers[trained_model_idx].step()
                 if batch_idx % 100 == 0:
                     print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
-            self.eval(val_loader)
+            self.eval(self.val_loader)
             torch.save(self.model.state_dict(), f'models/direction_model_{epoch}.pt')
     
+    def __decode(self, z, c):
+        with torch.no_grad():
+            with self.ldm_model.ema_scope():
+
+                # encode (scaled latent)
+                z_enc = self.ldm_sampler.stochastic_encode(
+                    z, torch.tensor([self.t_enc]*self.batch_size).to(self.device)
+                )
+                
+                samples = self.ldm_sampler.decode(z_enc, c, self.t_enc, unconditional_guidance_scale=self.scale,
+                                    unconditional_conditioning=self.uc)
+                x_sample = self.ldm_model.decode_first_stage(samples)[0]
+                x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
+        return x_sample
+                    
+
     def __load_img(self, image):
-        image = Image.open(path).convert("RGB")
+        #TODO add transform to dataset
+        #image = Image.open(path).convert("RGB")
         w, h = image.size
         print(f"loaded input image of size ({w}, {h}) from {path}")
         w, h = map(lambda x: x - x % 32, (w, h))  # resize to integer multiple of 32
@@ -66,230 +112,24 @@ class DirectionModelTrainer:
         return 2.0 * image - 1.0
     
 
+    def __load_model_from_config(self):
+        ckpt = self.configs['model']['ldm_model']['ckpt']
+        print(f"Loading model from {ckpt}")
+        pl_sd = torch.load(ckpt, map_location="cpu")
+        if "global_step" in pl_sd:
+            print(f"Global Step: {pl_sd['global_step']}")
+        sd = pl_sd["state_dict"]
+        model = instantiate_from_config(self.configs['model']['ldm_model'])
+        m, u = model.load_state_dict(sd, strict=False)
 
-def load_img(path):
-    image = Image.open(path).convert("RGB")
-    w, h = image.size
-    print(f"loaded input image of size ({w}, {h}) from {path}")
-    w, h = map(lambda x: x - x % 32, (w, h))  # resize to integer multiple of 32
-    image = image.resize((w, h), resample=PIL.Image.LANCZOS)
-    image = np.array(image).astype(np.float32) / 255.0
-    image = image[None].transpose(0, 3, 1, 2)
-    image = torch.from_numpy(image)
-    return 2.0 * image - 1.0
+        model.to(self.device)
+        model.eval()
+        return model
 
-
-def load_model_from_config(config, ckpt, verbose=False):
-    print(f"Loading model from {ckpt}")
-    pl_sd = torch.load(ckpt, map_location="cpu")
-    if "global_step" in pl_sd:
-        print(f"Global Step: {pl_sd['global_step']}")
-    sd = pl_sd["state_dict"]
-    model = instantiate_from_config(config.model)
-    m, u = model.load_state_dict(sd, strict=False)
-    if len(m) > 0 and verbose:
-        print("missing keys:")
-        print(m)
-    if len(u) > 0 and verbose:
-        print("unexpected keys:")
-        print(u)
-
-    global DEVICE
-    model.to(DEVICE)
-    model.eval()
-    return model
-
-
-def final_encode_and_save_noise(opt):
-    # input: image path, text (c1)
-    # output: saved_noise in noise_saved_path
-    seed_everything(opt.seed)
-    input_image = opt.input
-    text = opt.c1
-    noise_saved_path = "noise"
-    if not os.path.exists(noise_saved_path):
-        os.makedirs(noise_saved_path, exist_ok=True)
-    noise_saved_path += "/noise.pt"
-
-    global DEVICE
-    if DEVICE == 'cuda':
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-        else:
-            DEVICE = 'cpu'
-            device = torch.device(DEVICE)
-    else:
-        device = torch.device(DEVICE)
-
-    model = load_model_from_config(
-        OmegaConf.load("configs/stable-diffusion/v1-inference.yaml"),
-        "models/ldm/stable-diffusion-v1/model.ckpt",
-    ).to(device)
-    sampler = PLMSSampler(model)
-    num_samples = 1  # also known as batch size
-    wm = "StableDiffusionV1"
-    wm_encoder = WatermarkEncoder()
-    wm_encoder.set_watermark("bytes", wm.encode("utf-8"))
-
-    text_embed = model.get_learned_conditioning(num_samples * [text])
-    input_image_source = load_img(input_image).to(device)
-    noised_image_encode = model.get_first_stage_encoding(
-        model.encode_first_stage(input_image_source)
-    )
-    shape = [4, 64, 64]
-    start_code = None
-    uc = model.get_learned_conditioning(num_samples * [""])
-
-    with torch.no_grad():
-        samples_ddim, _ = sampler.sample_encode_save_noise(
-            S=50,
-            conditioning=text_embed,
-            batch_size=num_samples,
-            shape=shape,
-            verbose=False,
-            unconditional_guidance_scale=7.5,
-            unconditional_conditioning=uc,
-            eta=0.0,
-            x_T=start_code,
-            input_image=noised_image_encode,
-            noise_save_path=noise_saved_path,
-        )
-
-
-def final_edit_image(opt):
-    steps = 50
-    seed_everything(opt.seed)
-    original_text = opt.c1
-    new_text = opt.c2
-    noise_saved_path = "noise/noise.pt"
-    lambda_t = [opt.lambda_t_default_1] * opt.lambda_t_star + [
-        opt.lambda_t_default_2
-    ] * (
-        steps - opt.lambda_t_star
-    )  # lambda_t initialization
-    lambda_t = torch.tensor(lambda_t)
-    # save intermediate optimization image and weight
-    lambda_save_path = os.path.join(opt.outdir, "lambda")
-    image_save_path = os.path.join(opt.outdir, "image")
-    if not os.path.exists(lambda_save_path):
-        os.makedirs(lambda_save_path, exist_ok=True)
-    if not os.path.exists(image_save_path):
-        os.makedirs(image_save_path, exist_ok=True)
-    image_output_path = opt.outdir
-    if not os.path.exists(image_output_path):
-        os.makedirs(image_output_path, exist_ok=True)
-        # os.makedirs(image_output_path + "/each", exist_ok=True)
-
-    global DEVICE
-    if DEVICE == 'cuda':
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-        else:
-            DEVICE = 'cpu'
-            device = torch.device(DEVICE)
-    else:
-        device = torch.device(DEVICE)
-
-    model = load_model_from_config(
-        OmegaConf.load("configs/stable-diffusion/v1-inference.yaml"),
-        "models/ldm/stable-diffusion-v1/model.ckpt",
-    ).to(device)
-    sampler = PLMSSampler(model)
-    num_samples = 1
-    wm = "StableDiffusionV1"
-    wm_encoder = WatermarkEncoder()
-    wm_encoder.set_watermark("bytes", wm.encode("utf-8"))
-    noised_image_encode = None
-    shape = [4, 64, 64]
-    c1 = model.get_learned_conditioning(num_samples * [original_text])
-    c2 = model.get_learned_conditioning(num_samples * [new_text])
-    start_code = torch.load(noise_saved_path + "_final_latent.pt")
-    uc = model.get_learned_conditioning(num_samples * [""])
-    sampler.sample_optimize_intrinsic_edit(
-        S=50,
-        conditioning1=c1,
-        conditioning2=c2,
-        batch_size=num_samples,
-        shape=shape,
-        verbose=False,
-        unconditional_guidance_scale=7.5,
-        unconditional_conditioning=uc,
-        eta=0.0,
-        x_T=start_code,
-        input_image=noised_image_encode,
-        noise_save_path=None,
-        lambda_t=lambda_t,
-        lambda_save_path=lambda_save_path,
-        image_save_path=image_save_path,
-        original_text=original_text,
-        new_text=new_text,
-        otext=original_text,
-        noise_saved_path=noise_saved_path,
-    )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    trainer = DirectionModelTrainer(OmegaConf.load('configs/direction_model.yaml'))
+    trainer.train(trainer.train_loader, trainer.val_loader, trainer.epochs)
 
-    parser.add_argument(
-        "--c1",
-        type=str,
-        nargs="?",
-        default="A photo of person",
-        help="The text to synthesize original image.",
-    )
-    parser.add_argument(
-        "--c2",
-        type=str,
-        nargs="?",
-        default="A photo of person, smiling",
-        help="The text modifies from c1, containing target attribute.",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        nargs="?",
-        default=42,
-        help="The seed. Particularly useful to control original image.",
-    )
-    parser.add_argument(
-        "--input",
-        type=str,
-        nargs="?",
-        default="input/test.png",
-        help="Input image path.",
-    )
-    parser.add_argument(
-        "--lambda_t_star",
-        type=int,
-        nargs="?",
-        default=20,
-        help="lambda initialization.",
-    )
-    parser.add_argument(
-        "--lambda_t_default_1",
-        type=float,
-        nargs="?",
-        default=1.0,
-        help="lambda initialization.",
-    )
-    parser.add_argument(
-        "--lambda_t_default_2",
-        type=float,
-        nargs="?",
-        default=0.0,
-        help="lambda initialization.",
-    )
-    parser.add_argument(
-        "--outdir",
-        type=str,
-        nargs="?",
-        help="dir to write results to",
-        default="outputs/edit",
-    )
-
-    opt = parser.parse_args()
-
-    final_encode_and_save_noise(opt)
-    final_edit_image(opt)
 
