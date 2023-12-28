@@ -73,8 +73,8 @@ class DirectionModelTrainer:
                 decoded_latent_same = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
                 decoded_latent_diff = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
                 
-                loss_same = self.loss.contrastive_loss(noised_images_enc, decoded_latent_same)
-                loss_diff = self.loss.contrastive_loss(noised_images_enc, decoded_latent_diff)
+                loss_same = self.loss.contrastive_loss(decoded_latent_ground, decoded_latent_same)
+                loss_diff = self.loss.contrastive_loss(decoded_latent_ground, decoded_latent_diff)
                 loss = loss_same - loss_diff
                 loss.backward()
                 self.optimizers[trained_model_idx].step()
@@ -129,7 +129,7 @@ class DirectionModelTrainer:
 
 
 if __name__ == "__main__":
-    trainer = DirectionModelTrainer(OmegaConf.load('configs/direction_model.yaml'))
-    trainer.train(trainer.train_loader, trainer.val_loader, trainer.epochs)
+    trainer = DirectionModelTrainer(OmegaConf.load('dl_project/configs/direction_model_trainging.yaml')['training'])
+    trainer.train()
 
 
