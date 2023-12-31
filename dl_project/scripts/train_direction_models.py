@@ -72,10 +72,39 @@ class DirectionModelTrainer:
                 decoded_latent_ground = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
                 decoded_latent_same = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
                 decoded_latent_diff = data_parallel(self.__decode, (noised_images_enc, trained_direction_c_ground), dim=-1)
-                
-                loss_same = self.loss.contrastive_loss(decoded_latent_ground, decoded_latent_same)
-                loss_diff = self.loss.contrastive_loss(decoded_latent_ground, decoded_latent_diff)
-                loss = loss_same - loss_diff
+
+                ################################################################
+                # Contrastive Loss Example:
+                from dl_project.loss.contrastive_loss import ContrastiveLoss
+
+                self.direction_count = 7
+                feature_length = 100
+
+                # 1. create contrastive loss
+                ct_loss = ContrastiveLoss()
+                # 2. get features of shape [batch_size, direction_count, feature_length].
+                # This probably is the output of self.__decode().
+                features = torch.rand(self.batch_size, self.direction_count,
+                                      feature_length)
+                # 3. reshape features to [batch_size * direction_count, feature_length].  This is an example of reshaping features of shape [batch_size, direction_count, feature_length] to [batch_size * direction_count, feature_length]
+                reshaped_features = features.reshape(
+                    features.shape[0] * features.shape[1], -1)
+                # 4. create group_indices of shape[batch_size * direction_count]: which feature is from which direction model.
+                group_indices = torch.stack([torch.ones(features.shape[0]) * i for i in range(features.shape[1])]).T.reshape(features.shape[0] * features.shape[1])
+
+                # Optional: check if the reshaping is correct
+                for i in range(features.shape[0]):
+                    for j in range(features.shape[1]):
+                        assert (reshaped_features[i * features.shape[1] + j] == features[i][j]).all()
+
+                # 5.1: compute contrastive loss without reduction
+                loss_matrix = ct_loss(reshaped_features, group_indices, reduce='none')
+                # 5.2: Alternatively, we can compute the averaged loss value
+                loss_value = ct_loss(reshaped_features, group_indices, reduce='mean')
+
+                loss = loss_value
+                ################################################################
+
                 loss.backward()
                 self.optimizers[trained_model_idx].step()
                 if batch_idx % 100 == 0:

@@ -12,45 +12,19 @@ from latentclr.colat.projectors.identity import IdentityProjector
 def main():
 
     # Parameters
-    batch_size = 5  # Number of vectors in the batch
-    c_length = 128  # Length of each vector
-    direction_count = 7  # Number of directions
-    depth = 2  # Depth of MLPs in DirectionModel
+    num_features = 8  # Number of vectors in the batch
+    feature_length = 128  # Length of each vector
+    group_indices = torch.tensor([0, 0, 0, 1, 1, 1, 2, 2], dtype=torch.int)
+    features = torch.randn(num_features, feature_length)
 
-    # Generate a batch of arbitrary vectors
-    x = torch.randn(batch_size, c_length)
+    ct_loss = ContrastiveLoss()
+    loss = ct_loss(features, group_indices, reduce='none')
+    vectorized_loss = ct_loss.vectorized_forward(features, group_indices, reduce='none')
 
-    # Instantiate the DirectionModel
-    model = DirectionModel(
-        direction_count=direction_count,
-        c_length=c_length,
-        depth=depth,
-        alpha=0.1,
-        normalize=True,
-        bias=True,
-        batchnorm=True,
-        final_norm=False
-    )
+    print(loss)
+    print(vectorized_loss)
 
-    # replace generator and projector using those for diffusion models
-    """
-    Install additional packages using the following commands:
-    pip install pytorch-pretrained-biggan==0.1.1
-    pip install nltk==3.5
-    """
-    dummy_generator = BigGANGenerator(resolution='256', device=x.device, truncation=0.4, class_name='bulbul', feature_layer='generator.layers.4')
-    dummy_projector = IdentityProjector(normalize=True)
-    ct_loss = ContrastiveLoss(generator=dummy_generator, projector=dummy_projector, model=model, K=direction_count)
-    acc, loss = ct_loss.contrastive_loss(x)
 
-    # Print the output from the regular forward method
-    print("Accuracy:    ", acc.item())
-    print("Loss:        ", loss.item())
-
-    output_from_direction_model = model(x)
-    acc_no_gen, loss_no_gen = ct_loss.contrastive_loss_without_generator(output_from_direction_model, torch.randn(output_from_direction_model.shape))
-    print("Accuracy without generator:  ", acc_no_gen.item())
-    print("Loss without generator:      ", loss_no_gen.item())
 
 
 if __name__ == "__main__":
