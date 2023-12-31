@@ -18,7 +18,7 @@ def main():
     features = torch.randn(num_features, feature_length)
 
     ct_loss = ContrastiveLoss()
-    loss = ct_loss(features, group_indices, reduce='none')
+    loss = ct_loss(features, group_indices, reduce='mean')
     vectorized_loss = ct_loss.vectorized_forward(features, group_indices, reduce='none')
 
     print(loss)
