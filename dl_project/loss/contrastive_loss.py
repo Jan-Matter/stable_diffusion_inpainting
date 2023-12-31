@@ -112,8 +112,7 @@ class ContrastiveLoss:
             sim = torch.abs(sim)
 
         # create positive and negative masks
-        group_eq = (group_indices.unsqueeze(1) == group_indices.unsqueeze(
-            0))
+        group_eq = (group_indices.unsqueeze(1) == group_indices.unsqueeze(0)).to(device)
         diag_mask = torch.eye(num_features, dtype=torch.bool, device=device)
         positive_mask = group_eq & ~diag_mask
         negative_mask = ~group_eq & ~diag_mask

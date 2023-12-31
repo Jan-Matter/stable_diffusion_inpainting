@@ -15,15 +15,23 @@ def main():
     num_features = 8  # Number of vectors in the batch
     feature_length = 128  # Length of each vector
     group_indices = torch.tensor([0, 0, 0, 1, 1, 1, 2, 2], dtype=torch.int)
-    features = torch.randn(num_features, feature_length)
+    features = torch.randn(num_features, feature_length).cuda()
 
     ct_loss = ContrastiveLoss()
+
     loss = ct_loss(features, group_indices, reduce='mean')
-    vectorized_loss = ct_loss.vectorized_forward(features, group_indices, reduce='none')
+    loss_matrix = ct_loss(features, group_indices, reduce='none')
+
+    vectorized_loss = ct_loss.vectorized_forward(features, group_indices, reduce='mean')
+    vectorized_loss_matrix = ct_loss.vectorized_forward(features, group_indices, reduce='none')
 
     print(loss)
+    print(loss_matrix)
     print(vectorized_loss)
+    print(vectorized_loss_matrix)
 
+    print("loss and vectorized loss are the same:", (loss.item() - vectorized_loss.item()) < 1e-4)
+    print("loss matrix and vectorized loss matrix are the same:", (torch.abs(loss_matrix - vectorized_loss_matrix)).max().item() < 1e-4)
 
 
 
