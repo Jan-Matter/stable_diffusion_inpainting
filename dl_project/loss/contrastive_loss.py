@@ -93,9 +93,9 @@ class ContrastiveLoss:
         if reduce == 'none':
             return loss_matrix
         elif reduce == 'mean':
-            return loss_matrix.masked_select(~(torch.eye(loss_matrix.shape[0], dtype=torch.bool))).mean()
+            return loss_matrix.masked_select(~(torch.eye(loss_matrix.shape[0], dtype=torch.bool).to(device))).mean()
         elif reduce == 'sum':
-            return loss_matrix.masked_select(~(torch.eye(loss_matrix.shape[0], dtype=torch.bool))).sum()
+            return loss_matrix.masked_select(~(torch.eye(loss_matrix.shape[0], dtype=torch.bool).to(device))).sum()
         else:
             raise ValueError("Incorrect reduce method")
 
