@@ -4,6 +4,8 @@ import multiprocessing
 import urllib
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from os import path
+from pathlib import Path
 
 import PIL.Image
 from datasets import load_dataset
@@ -12,11 +14,11 @@ from torchvision.datasets import LSUN, CelebA
 
 USER_AGENT = get_datasets_user_agent()
 
-class ImageCaptionDataset:
 
+class ImageCaptionDataset:
     def __init__(self, configs):
         self.configs = configs
-        if self.configs['dataset'] == 'conceptual_captions':
+        if self.configs["dataset"] == "conceptual_captions":
             self.dataset = load_dataset("conceptual_captions")
             self.dataset = self.dataset.map(
                 self.__fetch_images,
@@ -25,21 +27,20 @@ class ImageCaptionDataset:
                 fn_kwargs={"num_threads": multiprocessing.cpu_count()},
             )
             self.dataset.with_format("torch")
-        elif self.configs['dataset'] == 'celeba':
-            self.dataset = CelebA("data/celeba", download=True, split='train')
-        elif self.configs['dataset'] == 'lsun_church':
-            self.lsun_church_dataset = LSUN("data/lsun_church", "church")
+        elif self.configs["dataset"] == "celeba":
+            self.dataset = CelebA("data/celeba", download=True, split="train")
+        elif self.configs["dataset"] == "lsun_church":
+            self.dataset = LSUN(
+                path.abspath("data/lsun_church"), classes=["church_outdoor_val"]
+            )
         else:
             raise ValueError(f'Invalid dataset name {self.configs["dataset"]}')
-    
 
     def __len__(self):
         return len(self.dataset)
-    
 
     def __getitem__(self, idx):
         return self.dataset[idx]
-    
 
     def __fetch_images(self, batch, num_threads, timeout=None, retries=0):
         fetch_single_image_with_args = partial(
@@ -48,11 +49,11 @@ class ImageCaptionDataset:
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             batch["image"] = list(
-                executor.map(self.__fetch_single_image, batch["image_url"])
+                executor.map(fetch_single_image_with_args, batch["image_url"])
             )
 
         return batch
-        
+
     def __fetch_single_image(self, image_url, timeout=None, retries=0):
         for _ in range(retries + 1):
             try:
@@ -69,9 +70,7 @@ class ImageCaptionDataset:
         return image
 
 
-if __name__ == '__main__':
-    configs = {
-        'dataset': 'celeba'
-    }
+if __name__ == "__main__":
+    configs = {"dataset": "lsun_church"}
     dataset = ImageCaptionDataset(configs)
     print(dataset[0])
