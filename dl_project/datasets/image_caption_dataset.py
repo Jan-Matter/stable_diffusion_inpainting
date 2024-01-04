@@ -16,9 +16,10 @@ USER_AGENT = get_datasets_user_agent()
 
 
 class ImageCaptionDataset:
-    def __init__(self, configs):
+    def __init__(self, configs, training=True):
         self.configs = configs
-        if self.configs["dataset"] == "conceptual_captions":
+        self.training = training
+        if self.configs["name"] == "conceptual_captions":
             self.dataset = load_dataset("conceptual_captions")
             self.dataset = self.dataset.map(
                 self.__fetch_images,
@@ -27,14 +28,14 @@ class ImageCaptionDataset:
                 fn_kwargs={"num_threads": multiprocessing.cpu_count()},
             )
             self.dataset.with_format("torch")
-        elif self.configs["dataset"] == "celeba":
+        elif self.configs["name"] == "celeba":
             self.dataset = CelebA("data/celeba", download=True, split="train")
-        elif self.configs["dataset"] == "lsun_church":
+        elif self.configs["name"] == "lsun_church":
             self.dataset = LSUN(
                 path.abspath("data/lsun_church"), classes=["church_outdoor_val"]
             )
         else:
-            raise ValueError(f'Invalid dataset name {self.configs["dataset"]}')
+            raise ValueError(f'Invalid dataset name {self.configs["name"]}')
 
     def __len__(self):
         return len(self.dataset)
@@ -71,6 +72,6 @@ class ImageCaptionDataset:
 
 
 if __name__ == "__main__":
-    configs = {"dataset": "lsun_church"}
+    configs = {"name": "lsun_church"}
     dataset = ImageCaptionDataset(configs)
     print(dataset[0])

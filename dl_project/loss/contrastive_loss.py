@@ -1,6 +1,6 @@
 import torch
 
-class ContrastiveLoss:
+class ContrastiveLoss(torch.nn.Module):
 
     def __init__(self, abs=True, temp=0.5):
 
