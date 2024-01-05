@@ -10,7 +10,9 @@ training:
   scale: 5.0
 
   dataset:
-    name: conceptual_captions
+    name: lsun_church
+    resize_w: 128
+    resize_h: 128
   
   loss:
     abs: true

@@ -35,7 +35,7 @@ class DirectionModelTrainer:
         self.device = torch.device(configs['device'])
         self.direction_model.to(self.device)
 
-        dataset = ImageCaptionDataset(configs['dataset'], training=True)
+        dataset = ImageCaptionDataset(configs['dataset'], training=False) #TODO change to to true when dataset is ready
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
         train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
@@ -132,18 +132,6 @@ class DirectionModelTrainer:
                 loss = self.__get_batch_loss(x)
                 total_loss += loss.item()
         return total_loss / len(self.val_loader)
-                    
-
-    def __load_img(self, image):
-        #TODO add transform to dataset
-        #image = Image.open(path).convert("RGB")
-        w, h = image.size
-        w, h = map(lambda x: x - x % 32, (w, h))  # resize to integer multiple of 32
-        image = image.resize((w, h), resample=PIL.Image.LANCZOS)
-        image = np.array(image).astype(np.float32) / 255.0
-        image = image[None].transpose(0, 3, 1, 2)
-        image = torch.from_numpy(image)
-        return 2.0 * image - 1.0
     
 
     def __load_model_from_config(self):

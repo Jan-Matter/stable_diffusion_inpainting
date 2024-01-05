@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from os import path
 from pathlib import Path
+import numpy as np
+import torch
 
 import PIL.Image
 from datasets import load_dataset
@@ -19,6 +21,8 @@ class ImageCaptionDataset:
     def __init__(self, configs, training=True):
         self.configs = configs
         self.training = training
+        self.__resize_w = configs["resize_w"]
+        self.__resize_h = configs["resize_h"]
         if self.configs["name"] == "conceptual_captions":
             self.dataset = load_dataset("conceptual_captions")
             self.dataset = self.dataset.map(
@@ -29,11 +33,19 @@ class ImageCaptionDataset:
             )
             self.dataset.with_format("torch")
         elif self.configs["name"] == "celeba":
-            self.dataset = CelebA("data/celeba", download=True, split="train")
+            if self.training:
+                self.dataset = CelebA("data/celeba", download=True, split="train")
+            else:
+                self.dataset = CelebA("data/celeba", download=True, split="test")
         elif self.configs["name"] == "lsun_church":
-            self.dataset = LSUN(
-                path.abspath("data/lsun_church"), classes=["church_outdoor_val"]
-            )
+            if self.training:
+                self.dataset = LSUN(
+                    path.abspath("data/lsun_church"), classes=["church_outdoor_train"]
+                )
+            else:
+                self.dataset = LSUN(
+                    path.abspath("data/lsun_church"), classes=["church_outdoor_val"]
+                )
         else:
             raise ValueError(f'Invalid dataset name {self.configs["name"]}')
 
@@ -41,7 +53,12 @@ class ImageCaptionDataset:
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        return self.dataset[idx]
+        caption = self.__get_caption(idx)
+        image = self.__transform_img(self.dataset[idx][0])
+        return {
+            "image": image,
+            "caption": caption,
+        }
 
     def __fetch_images(self, batch, num_threads, timeout=None, retries=0):
         fetch_single_image_with_args = partial(
@@ -69,9 +86,31 @@ class ImageCaptionDataset:
             except Exception:
                 image = None
         return image
+    
+    def __transform_img(self, image):
+        w, h = image.size 
+        image = image.resize((self.__resize_w, self.__resize_h), resample=PIL.Image.LANCZOS)
+        image = np.array(image).astype(np.float32) / 255.0
+        image = image[None].transpose(0, 3, 1, 2)
+        image = torch.from_numpy(image)
+        return 2.0 * image - 1.0
+    
+    def __get_caption(self, idx):
+        if self.configs["name"] == "conceptual_captions":
+            return self.dataset[idx]["caption"]
+        elif self.configs["name"] == "celeba":
+            return "A photo of a person"
+        elif self.configs["name"] == "lsun_church":
+            return "A photo of church exterior"
+        else:
+            raise ValueError(f'Invalid dataset name {self.configs["name"]}')
 
 
 if __name__ == "__main__":
-    configs = {"name": "lsun_church"}
-    dataset = ImageCaptionDataset(configs)
+    configs = {
+        "name": "lsun_church",
+        "resize_w": 128,
+        "resize_h": 128,
+        }
+    dataset = ImageCaptionDataset(configs, training=False)
     print(dataset[0])

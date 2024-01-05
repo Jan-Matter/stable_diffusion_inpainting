@@ -7,7 +7,9 @@ inference:
   output_path: dl_project/output/direction_model_inference
 
   dataset:
-    name: conceptual_captions
+    name: lsun_church
+    resize_w: 128
+    resize_h: 128
 
   model:
     direction_model:

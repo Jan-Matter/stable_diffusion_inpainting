@@ -43,7 +43,7 @@ def main():
     if args.category is None:
         print("Downloading", len(categories), "categories")
         for category in categories:
-            download(args.out_dir, category, "train")
+            #download(args.out_dir, category, "train")
             download(args.out_dir, category, "val")
         download(args.out_dir, "", "test")
     else:
@@ -52,7 +52,7 @@ def main():
         elif args.category not in categories:
             print("Error:", args.category, "doesn't exist in", "LSUN release")
         else:
-            download(args.out_dir, args.category, "train")
+            #download(args.out_dir, args.category, "train")
             download(args.out_dir, args.category, "val")
 
 
