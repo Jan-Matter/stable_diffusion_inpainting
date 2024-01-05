@@ -5,7 +5,7 @@ from __future__ import division, print_function
 import argparse
 import shutil
 import subprocess
-from os import path, rename
+from os import path, remove, rename
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -42,6 +42,8 @@ def download(out_dir, category, set_name, data_entry_limit):
     cmd = ["unzip", out_path, "-d", path.dirname(out_path)]
     print("\nExtracting", category, set_name, "set")
     subprocess.call(cmd)
+
+    remove(out_path)
 
     db_path = path.abspath(out_path)[0:-4]
 
