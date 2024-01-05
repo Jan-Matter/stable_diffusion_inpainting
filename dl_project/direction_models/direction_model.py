@@ -19,6 +19,7 @@ class DirectionModel(Model):
         bias: bool = True,
         batchnorm: bool = True,
         final_norm: bool = False,
+        **kwargs
     ):
 
         super().__init__(k=direction_count, size=c_length, alpha=alpha, normalize=normalize)
