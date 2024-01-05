@@ -2,7 +2,7 @@
 Setup of Project in Cluster (Described with VSCode)
 
 - Download VSCode (If not yet done)
-- Downlaod Extention Remote - SSH by Microsoft
+- Download Extention Remote - SSH by Microsoft
 - Go to ssh tab and create a new connection  with <ethz_username>@student-cluster.inf.ethz.ch use your ETH password for it
 - Open Terminal in VSCode
 - use "ssh-keygen" command to create ssh keys and add them to your github settings
@@ -23,5 +23,36 @@ download LSUN church dataset:
 
 To run script:
 srun --pty -A deep_learning -G 1 -t 60 bash ./scripts/edit.sh
+
+interactive shell (use with care stop session after you don't use it anymore to safe gpu hours!):
+-t gives time in minutes
+srun --pty -A deep_learning -G 1 -t 60 bash
+
+
+
+
+
+Meeting Notes 5.1.2024
+
+- Fit Dataset
+    - Download it during Running
+    - Ask TAs for TMP Space
+    - Kaggle
+    - TMP DIR
+    - Conclusion for now transform dataset locally to fit it on disk and document process (Andras)
+    - Debug Celeb (Ning)
+
+- Writing Report (Ning, Arvid)
+    - Write Sections as far as possible with curren knowledge
+    - Read Related work
+
+Jan
+- hyperparam tuning on church
+- training on church -> do edits check results
+- train on celeb -> compare results with church results
+
+
+
+
 
 

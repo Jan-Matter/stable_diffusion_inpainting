@@ -91,7 +91,7 @@ class ImageCaptionDataset:
         w, h = image.size 
         image = image.resize((self.__resize_w, self.__resize_h), resample=PIL.Image.LANCZOS)
         image = np.array(image).astype(np.float32) / 255.0
-        image = image[None].transpose(0, 3, 1, 2)
+        image = image.transpose(2, 0, 1)
         image = torch.from_numpy(image)
         return 2.0 * image - 1.0
     

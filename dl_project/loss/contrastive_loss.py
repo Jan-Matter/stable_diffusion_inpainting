@@ -2,7 +2,7 @@ import torch
 
 class ContrastiveLoss(torch.nn.Module):
 
-    def __init__(self, abs=True, temp=0.5):
+    def __init__(self, abs=True, temp=0.5, **kwargs):
 
         self.abs = abs
         self.temp = temp

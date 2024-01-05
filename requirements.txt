@@ -17,10 +17,11 @@ torch-fidelity==0.3.0
 transformers==4.19.2
 torchmetrics==0.6.0
 kornia==0.6
-datasets
-Pillow
-lmdb
-ax-platform
+datasets==2.16.0
+Pillow==10.1.0
+lmdb==1.4.1
+ax-platform==0.2.10
+remote-pdb==2.1.0
 -e git+https://github.com/CompVis/taming-transformers.git@master#egg=taming-transformers
 -e git+https://github.com/openai/CLIP.git@main#egg=clip
 -e .
