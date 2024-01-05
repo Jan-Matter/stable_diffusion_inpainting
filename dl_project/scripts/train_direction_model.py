@@ -8,6 +8,7 @@ from PIL import Image
 from imwatermark import WatermarkEncoder
 from pytorch_lightning import seed_everything
 import random
+from tqdm import tqdm
 
 from pathlib import Path
 import sys
@@ -28,8 +29,8 @@ class DirectionModelTrainer:
         self.model_save_path = configs['model']['direction_model']['path']
         self.direction_count = configs['model']['direction_model']['direction_count']
         self.direction_model = DirectionModel(**configs['model']['direction_model'])
-        #self.ldm_model = self.__load_model_from_config(configs['model']['ldm_model'])
-        #self.ldm_sampler = PLMSSampler(self.ldm_model)
+        self.ldm_model = self.__load_model_from_config(configs['model']['ldm_model'])
+        self.ldm_sampler = PLMSSampler(self.ldm_model)
         self.loss = ContrastiveLoss(**configs['loss'])
         self.optimizer = torch.optim.Adam(self.direction_model.parameters(), lr=configs['lr'])
         self.device = torch.device(configs['device'])
@@ -48,7 +49,7 @@ class DirectionModelTrainer:
         #defaults: strength = 0.8 and ddim_steps = 50 and scale = 5.0
         self.t_enc = int(configs['strength'] * configs['ddim_steps'])
         self.scale = configs['scale']
-        #self.uc = self.ldm_model.get_learned_conditioning(self.batch_size * [""])
+        self.uc = self.ldm_model.get_learned_conditioning(self.batch_size * [""])
 
         seed_everything(configs['seed'])
 
@@ -57,7 +58,7 @@ class DirectionModelTrainer:
     def train(self):
         for epoch in range(self.epochs):
             self.direction_model.train()
-            for batch_idx, x in enumerate(self.train_loader):
+            for batch_idx, x in tqdm(enumerate(self.train_loader)):
 
                 loss = self.__get_batch_loss(x)
                 loss.backward()
@@ -76,7 +77,6 @@ class DirectionModelTrainer:
         images = x['image'].to(self.device)
         captions = x['caption']
 
-        """
         captions_enc = self.ldm_model.get_learned_conditioning(captions)
         noised_images_enc = self.ldm_model.get_first_stage_encoding(
             self.ldm_model.encode_first_stage(images)
@@ -91,9 +91,7 @@ class DirectionModelTrainer:
         #apply stable diffusion model to input images
         features = data_parallel(self.__decode,
                 (noised_images_enc, directions), dim=-1)
-        """
-        features = torch.randn((self.batch_size * self.direction_count, 4, 16, 16)).to(self.device)
-        feature_length = features.shape[-1]
+        
         # reshape features to [batch_size * direction_count, feature_length].
         reshaped_features = features.reshape(
             features.shape[0] * features.shape[1], -1)
@@ -103,11 +101,6 @@ class DirectionModelTrainer:
                                         for i in range(features.shape[1])])\
                                         .T\
                                         .reshape(features.shape[0] * features.shape[1])
-
-        # Optional: check if the reshaping is correct
-        for i in range(features.shape[0]):
-            for j in range(features.shape[1]):
-                assert (reshaped_features[i * features.shape[1] + j] == features[i][j]).all()
 
         loss = self.loss(reshaped_features, group_indices)
         return loss
