@@ -1,6 +1,5 @@
 import argparse, os
 import torch
-from  torch.nn.parallel import data_parallel
 import numpy as np
 import PIL
 from omegaconf import OmegaConf
@@ -16,7 +15,7 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 from ldm.util import instantiate_from_config
-from ldm.models.diffusion.plms import PLMSSampler
+from ldm.models.diffusion.ddim import DDIMSampler
 
 from dl_project.direction_models.direction_model import DirectionModel
 from dl_project.loss.contrastive_loss import ContrastiveLoss
@@ -26,17 +25,20 @@ class DirectionModelTrainer:
      
     def __init__(self, configs):
         self.configs = configs
+        self.device = torch.device(configs['device'])
         self.model_save_path = configs['model']['direction_model']['path']
         self.direction_count = configs['model']['direction_model']['direction_count']
         self.direction_model = DirectionModel(**configs['model']['direction_model'])
         self.ldm_model = self.__load_model_from_config(configs['model']['ldm_model'])
-        self.ldm_sampler = PLMSSampler(self.ldm_model)
+        self.ldm_sampler = DDIMSampler(self.ldm_model)
+        self.ddim_steps = configs['ddim_steps']
+        self.ddim_eta = configs['ddim_eta']
+        self.ldm_sampler.make_schedule(ddim_num_steps=self.ddim_steps, ddim_eta=self.ddim_eta, verbose=False)
         self.loss = ContrastiveLoss(**configs['loss'])
         self.optimizer = torch.optim.Adam(self.direction_model.parameters(), lr=configs['lr'])
-        self.device = torch.device(configs['device'])
         self.direction_model.to(self.device)
 
-        dataset = ImageCaptionDataset(configs['dataset'], training=False) #TODO change to to true when dataset is ready
+        dataset = ImageCaptionDataset(configs['dataset'], training=True) #TODO change to to true when dataset is ready
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
         train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
@@ -76,25 +78,53 @@ class DirectionModelTrainer:
     def __get_batch_loss(self, x):
         images = x['image'].to(self.device)
         captions = x['caption']
+        captions_enc = [self.ldm_model.get_learned_conditioning([caption]) for caption in captions]
+        #since all captions are the same, we can just take the first
+        caption_enc = captions_enc[0]
+        #since the caption has only a length of 5 we can take the first 5 tokens as latent space
+        token_count = self.configs['model']['direction_model']['c_length'] // 768
+        caption_enc = caption_enc[:, :token_count, :].repeat(self.batch_size, 1, 1)
+        caption_enc_reshaped = caption_enc.reshape(self.batch_size, -1)
 
-        captions_enc = self.ldm_model.get_learned_conditioning(captions)
         noised_images_enc = self.ldm_model.get_first_stage_encoding(
             self.ldm_model.encode_first_stage(images)
         )
 
         # [batch_size, noised_image_enc_length] -> [batch_size, direction_count, noised_image_enc_length]
+        noised_images_enc = noised_images_enc.reshape(self.batch_size, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
+        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 16, 16)
         
         # [batch_size, caption_enc_length] -> [batch_size, direction_count, caption_enc_length]
-        directions = self.direction_model(captions_enc)
+        directions = self.direction_model(caption_enc_reshaped)
+        directions = directions.reshape(self.batch_size, self.direction_count, token_count, -1)
+        captions_enc_rest = captions_enc[0]\
+            .unsqueeze(1)\
+            .repeat(self.batch_size, self.direction_count, 1, 1)\
+                [:, :, token_count:, :]
 
-        #apply stable diffusion model to input images
-        features = data_parallel(self.__decode,
-                (noised_images_enc, directions), dim=-1)
+        directions = torch.cat([directions, captions_enc_rest], dim=2)
+
+        # apply stable diffusion model to input images
+        features = []
+        for batch_idx in range(self.batch_size):
+            batch_features = []
+            for direction_idx in range(self.direction_count):
+                noised_image_enc = noised_images_enc[batch_idx * self.direction_count + direction_idx]
+                noised_image_enc = noised_image_enc.unsqueeze(0)
+                direction = directions[batch_idx, direction_idx]
+                direction = direction.unsqueeze(0)
+
+                decoded_samples = self.__decode(noised_image_enc, direction)
+                batch_features.append(decoded_samples)
+            batch_features = torch.stack(batch_features)
+            features.append(batch_features)
+        features = torch.stack(features)
         
         # reshape features to [batch_size * direction_count, feature_length].
         reshaped_features = features.reshape(
-            features.shape[0] * features.shape[1], -1)
+            features.shape[0] * features.shape[1], -1
+        )
             
         # 4. create group_indices of shape[batch_size * direction_count]: which feature is from which direction model.
         group_indices = torch.stack([torch.ones(features.shape[0]) * i
@@ -111,7 +141,9 @@ class DirectionModelTrainer:
 
                 # encode (scaled latent)
                 z_enc = self.ldm_sampler.stochastic_encode(
-                    z, torch.tensor([self.t_enc]*self.batch_size).to(self.device)
+                    z,
+                    torch.tensor([self.t_enc]*self.batch_size).to(self.device),
+                    use_original_steps=True
                 )
                 
                 samples = self.ldm_sampler.decode(z_enc, c, self.t_enc, unconditional_guidance_scale=self.scale,
@@ -129,8 +161,8 @@ class DirectionModelTrainer:
         return total_loss / len(self.val_loader)
     
 
-    def __load_model_from_config(self):
-        ckpt = self.configs['model']['ldm_model']['ckpt']
+    def __load_model_from_config(self, configs):
+        ckpt = configs['ckpt']
         print(f"Loading model from {ckpt}")
         pl_sd = torch.load(ckpt, map_location="cpu")
         if "global_step" in pl_sd:

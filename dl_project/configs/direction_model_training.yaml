@@ -4,15 +4,16 @@ training:
   epochs: 100
   lr: 0.001
   seed: 42
-  device: cpu
+  device: cuda
   strength: 0.8
   ddim_steps: 50
+  ddim_eta: 0.0
   scale: 5.0
 
   dataset:
     name: lsun_church
-    resize_w: 128
-    resize_h: 128
+    resize_w: 256
+    resize_h: 256
   
   loss:
     abs: true
@@ -22,7 +23,7 @@ training:
     direction_model:
       path: dl_project/trained_models/direction_model.pt
       direction_count: 4
-      c_length: 128
+      c_length: 3840
       depth: 2
       alpha: 0.1
       normalize: true
@@ -31,9 +32,10 @@ training:
       final_norm: false
 
     ldm_model:
-      #configs from configs/stable-diffusion/v1-inference.yaml
+      #configs from configs/stable-diffusion/v1-inference.yaml added ckpt_path
       base_learning_rate: 1.0e-04
       target: ldm.models.diffusion.ddpm.LatentDiffusion
+      ckpt: models/ldm/stable-diffusion-v1/model.ckpt
       params:
         linear_start: 0.00085
         linear_end: 0.0120
