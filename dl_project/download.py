@@ -6,6 +6,8 @@ import argparse
 import subprocess
 from os.path import join
 from urllib.request import Request, urlopen
+import os
+from zipfile import ZipFile
 
 __author__ = "Fisher Yu"
 __email__ = "fy@cs.princeton.edu"
@@ -43,7 +45,7 @@ def main():
     if args.category is None:
         print("Downloading", len(categories), "categories")
         for category in categories:
-            #download(args.out_dir, category, "train")
+            download(args.out_dir, category, "train")
             download(args.out_dir, category, "val")
         download(args.out_dir, "", "test")
     else:
@@ -52,8 +54,15 @@ def main():
         elif args.category not in categories:
             print("Error:", args.category, "doesn't exist in", "LSUN release")
         else:
-            #download(args.out_dir, args.category, "train")
+            download(args.out_dir, args.category, "train")
             download(args.out_dir, args.category, "val")
+    
+    for file in os.listdir("data/lsun_church"):
+        if file.endswith(".zip"):
+            zip_ref = ZipFile("data/lsun_church/" + file, 'r')
+            zip_ref.extractall("data/lsun_church")
+            zip_ref.close()
+            os.remove("data/lsun_church/" + file)
 
 
 if __name__ == "__main__":
