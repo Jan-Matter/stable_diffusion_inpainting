@@ -12,7 +12,7 @@ pytorch-lightning==1.4.2
 omegaconf==2.1.1
 test-tube>=0.7.5
 streamlit>=0.73.1
-einops==0.3.0
+einops==0.4.0
 torch-fidelity==0.3.0
 transformers==4.19.2
 torchmetrics==0.6.0
@@ -22,6 +22,8 @@ Pillow==10.1.0
 lmdb==1.4.1
 ax-platform==0.2.10
 remote-pdb==2.1.0
+tensorflow==2.15.0
+tensorflow-datasets==4.9.4
 -e git+https://github.com/CompVis/taming-transformers.git@master#egg=taming-transformers
 -e git+https://github.com/openai/CLIP.git@main#egg=clip
 -e .

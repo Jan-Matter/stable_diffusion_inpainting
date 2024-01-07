@@ -8,6 +8,7 @@ from imwatermark import WatermarkEncoder
 from pytorch_lightning import seed_everything
 import random
 from tqdm import tqdm
+from torch.nn import MSELoss
 
 from pathlib import Path
 import sys
@@ -51,7 +52,7 @@ class DirectionModelTrainer:
         #defaults: strength = 0.8 and ddim_steps = 50 and scale = 5.0
         self.t_enc = int(configs['strength'] * configs['ddim_steps'])
         self.scale = configs['scale']
-        self.uc = self.ldm_model.get_learned_conditioning(self.batch_size * [""])
+        self.uc = self.ldm_model.get_learned_conditioning([""]).requires_grad_(True).to(self.device)
 
         seed_everything(configs['seed'])
 
@@ -65,8 +66,8 @@ class DirectionModelTrainer:
                 loss = self.__get_batch_loss(x)
                 loss.backward()
                 self.optimizer.step()
-                if batch_idx % 100 == 0:
-                    print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
+                #if batch_idx % 100 == 0:
+                print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
             
             val_loss = self.validate()
             print(f'Epoch {epoch}, Validation Loss {val_loss}, best Validation Loss {self.best_loss}')
@@ -136,18 +137,15 @@ class DirectionModelTrainer:
         return loss
 
     def __decode(self, z, c):
-        with torch.no_grad():
-            with self.ldm_model.ema_scope():
+        with self.ldm_model.ema_scope():
 
-                # encode (scaled latent)
-                z_enc = self.ldm_sampler.stochastic_encode(
-                    z,
-                    torch.tensor([self.t_enc]*self.batch_size).to(self.device),
-                    use_original_steps=True
-                )
-                
-                samples = self.ldm_sampler.decode(z_enc, c, self.t_enc, unconditional_guidance_scale=self.scale,
-                                    unconditional_conditioning=self.uc)
+            # encode (scaled latent)
+            z_enc = self.ldm_sampler.stochastic_encode(
+                z,
+                torch.tensor([self.t_enc]).to(self.device)
+            )
+            samples = self.ldm_sampler.decode(z_enc, c, self.t_enc, unconditional_guidance_scale=self.scale,
+                                unconditional_conditioning=self.uc)
         return samples
     
 

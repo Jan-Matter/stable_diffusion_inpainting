@@ -1,6 +1,8 @@
 
 Setup of Project in Cluster (Described with VSCode)
 
+- environment tested on python: 3.10.12 and linux
+
 - Download VSCode (If not yet done)
 - Download Extention Remote - SSH by Microsoft
 - Go to ssh tab and create a new connection  with <ethz_username>@student-cluster.inf.ethz.ch use your ETH password for it

@@ -1,6 +1,6 @@
 training:
   train_size: 0.8
-  batch_size: 5
+  batch_size: 3
   epochs: 100
   lr: 0.001
   seed: 42
@@ -12,8 +12,8 @@ training:
 
   dataset:
     name: lsun_church
-    resize_w: 256
-    resize_h: 256
+    resize_w: 128
+    resize_h: 128
   
   loss:
     abs: true
@@ -22,7 +22,7 @@ training:
   model:
     direction_model:
       path: dl_project/trained_models/direction_model.pt
-      direction_count: 4
+      direction_count: 2
       c_length: 3840
       depth: 2
       alpha: 0.1
