@@ -19,7 +19,7 @@ download model:
 - wget -O models/ldm/stable-diffusion-v1/model.ckpt https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt
 download LSUN church dataset:
 - mkdir data/lsun_church
-- python dl_project/download.py --out_dir "data/lsun_church" --category church_outdoor
+- python dl_project/download.py --out_dir "data/lsun_church" --category church_outdoor [-l sample limit]
 
 To run script:
 srun --pty -A deep_learning -G 1 -t 60 bash ./scripts/edit.sh

@@ -1,4 +1,6 @@
 """Module containing the Dataset for image captioning tasks."""
+import tensorflow as tf
+import tensorflow_datasets as tfds
 import io
 import multiprocessing
 import urllib
@@ -33,10 +35,13 @@ class ImageCaptionDataset:
             )
             self.dataset.with_format("torch")
         elif self.configs["name"] == "celeba":
+            gcs_base_dir = "gs://celeb_a_dataset/"
+            builder = tfds.builder("celeb_a", data_dir=gcs_base_dir, version='2.0.0')
+            builder.download_and_prepare()
             if self.training:
-                self.dataset = CelebA("data/celeba", download=True, split="train")
+                self.dataset = builder.as_dataset(split='train', as_supervised=False, shuffle_files=True, batch_size=1)
             else:
-                self.dataset = CelebA("data/celeba", download=True, split="test")
+                self.dataset = builder.as_dataset(split='test', as_supervised=False, shuffle_files=False, batch_size=1)
         elif self.configs["name"] == "lsun_church":
             if self.training:
                 self.dataset = LSUN(
