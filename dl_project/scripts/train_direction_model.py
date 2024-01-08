@@ -40,6 +40,7 @@ class DirectionModelTrainer:
         self.direction_model.to(self.device)
 
         dataset = ImageCaptionDataset(configs['dataset'], training=True) #TODO change to to true when dataset is ready
+        dataset = torch.utils.data.Subset(dataset, range(5000))
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
         train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
@@ -68,13 +69,21 @@ class DirectionModelTrainer:
                 self.optimizer.step()
                 #if batch_idx % 100 == 0:
                 print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
-            
             val_loss = self.validate()
             print(f'Epoch {epoch}, Validation Loss {val_loss}, best Validation Loss {self.best_loss}')
             if self.best_loss is None or val_loss < self.best_loss:
                 self.best_loss = val_loss
                 print(f"Saving model with validation loss {val_loss}")
-                torch.save(self.model.state_dict(), self.model_save_path)
+                torch.save(self.direction_model.state_dict(), self.model_save_path)
+    
+    def validate(self):
+        self.direction_model.eval()
+        total_loss = 0
+        with torch.no_grad():
+            for batch_idx, x in enumerate(self.val_loader):
+                loss = self.__get_batch_loss(x)
+                total_loss += loss.item()
+        return total_loss / len(self.val_loader)
     
     def __get_batch_loss(self, x):
         images = x['image'].to(self.device)
@@ -116,7 +125,12 @@ class DirectionModelTrainer:
                 direction = directions[batch_idx, direction_idx]
                 direction = direction.unsqueeze(0)
 
-                decoded_samples = self.__decode(noised_image_enc, direction)
+                if batch_idx != self.batch_size - 1 or batch_idx % self.direction_count != direction_idx:
+                    # this is necessary to keep the memory usage in bounds
+                    with torch.no_grad():
+                        decoded_samples = self.__decode(noised_image_enc, direction)
+                else:
+                    decoded_samples = self.__decode(noised_image_enc, direction)
                 batch_features.append(decoded_samples)
             batch_features = torch.stack(batch_features)
             features.append(batch_features)
@@ -148,16 +162,7 @@ class DirectionModelTrainer:
                                 unconditional_conditioning=self.uc)
         return samples
     
-
-    def validate(self):
-        self.direction_model.eval()
-        total_loss = 0
-        with torch.no_grad():
-            for batch_idx, x in enumerate(self.val_loader):
-                loss = self.__get_batch_loss(x)
-                total_loss += loss.item()
-        return total_loss / len(self.val_loader)
-    
+  
 
     def __load_model_from_config(self, configs):
         ckpt = configs['ckpt']
