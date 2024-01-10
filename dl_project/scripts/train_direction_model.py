@@ -64,8 +64,10 @@ class DirectionModelTrainer:
         for epoch in range(self.epochs):
             self.direction_model.train()
             for batch_idx, x in tqdm(enumerate(self.train_loader)):
-
+                self.optimizer.zero_grad()
+                torch.cuda.empty_cache()
                 loss = self.__get_batch_loss(x)
+                torch.cuda.empty_cache()
                 loss.backward()
                 self.optimizer.step()
                 #if batch_idx % 100 == 0:
@@ -90,6 +92,7 @@ class DirectionModelTrainer:
                 total_loss += loss.item()
         return total_loss / len(self.val_loader)
     
+
     def __get_batch_loss(self, x):
         images = x['image'].to(self.device)
         captions = x['caption']
@@ -134,6 +137,7 @@ class DirectionModelTrainer:
                     # this is necessary to keep the memory usage in bounds
                     with torch.no_grad():
                         decoded_samples = self.__decode(noised_image_enc, direction)
+                        decoded_samples = decoded_samples.detach()
                 else:
                     decoded_samples = self.__decode(noised_image_enc, direction)
                 batch_features.append(decoded_samples)
