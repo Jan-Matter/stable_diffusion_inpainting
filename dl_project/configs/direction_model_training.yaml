@@ -9,6 +9,7 @@ training:
   ddim_steps: 50
   ddim_eta: 0.0
   scale: 5.0
+  val_loss_path : dl_project/output/val_loss_v1.npy
 
   dataset:
     name: lsun_church

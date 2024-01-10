@@ -40,7 +40,7 @@ class DirectionModelTrainer:
         self.direction_model.to(self.device)
 
         dataset = ImageCaptionDataset(configs['dataset'], training=True) #TODO change to to true when dataset is ready
-        dataset = torch.utils.data.Subset(dataset, range(5000))
+        dataset = torch.utils.data.Subset(dataset, range(105))
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
         train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
@@ -49,6 +49,7 @@ class DirectionModelTrainer:
         self.epochs = configs['epochs']
 
         self.best_loss = None
+        self.val_losses = []
 
         #defaults: strength = 0.8 and ddim_steps = 50 and scale = 5.0
         self.t_enc = int(configs['strength'] * configs['ddim_steps'])
@@ -70,7 +71,11 @@ class DirectionModelTrainer:
                 #if batch_idx % 100 == 0:
                 print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
             val_loss = self.validate()
+
+            self.val_losses.append(val_loss)
+            np.save(self.configs['val_loss_path'], np.array(self.val_losses))
             print(f'Epoch {epoch}, Validation Loss {val_loss}, best Validation Loss {self.best_loss}')
+            
             if self.best_loss is None or val_loss < self.best_loss:
                 self.best_loss = val_loss
                 print(f"Saving model with validation loss {val_loss}")

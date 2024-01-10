@@ -39,6 +39,7 @@ class DirectionModelValidator:
         self.direction_model.to(self.device)
 
         dataset = ImageCaptionDataset(configs['dataset'], training=False)
+        dataset = torch.utils.data.Subset(dataset, range(30))
         self.batch_size = configs['batch_size']
         self.val_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
 
