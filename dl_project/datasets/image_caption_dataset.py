@@ -100,6 +100,7 @@ class ImageCaptionDataset:
         image = torch.from_numpy(image)
         return 2.0 * image - 1.0
     
+    
     def __get_caption(self, idx):
         if self.configs["name"] == "conceptual_captions":
             return self.dataset[idx]["caption"]

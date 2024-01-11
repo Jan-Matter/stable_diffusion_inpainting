@@ -66,7 +66,7 @@ class DirectionModelInference:
         )
         noised_images_enc = noised_images_enc.reshape(1, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
-        noised_images_enc = noised_images_enc.reshape(1 * self.direction_count, 4, 16, 16)
+        noised_images_enc = noised_images_enc.reshape(1 * self.direction_count, 4, 32, 32)
 
         
         # [batch_size, caption_enc_length] -> [batch_size, direction_count, caption_enc_length]
@@ -89,14 +89,16 @@ class DirectionModelInference:
             direction_output = direction_output.unsqueeze(0)
 
             decoded_image = self.__decode(noised_image_enc, direction_output)
+
             Image.fromarray(decoded_image.astype(np.uint8)).save(
                         os.path.join(self.decoded_output_path, f"image_{idx}_direction_{direction_idx}.png"))
         
         orig_decoded_image = self.__decode(noised_image_enc, orig_caption_enc)
-        Image.fromarray(decoded_image.astype(np.uint8)).save(
+        Image.fromarray(orig_decoded_image.astype(np.uint8)).save(
                         os.path.join(self.decoded_output_path, f"image_{idx}_orig_decoded.png"))
         
-        orig_image = 255. * rearrange(image[0].cpu().numpy(), 'c h w -> h w c')
+        orig_image = torch.clamp((image[0] + 1.0) / 2.0, min=0.0, max=1.0).squeeze().cpu().numpy()
+        orig_image = 255. * rearrange(orig_image, 'c h w -> h w c')
         Image.fromarray(orig_image.astype(np.uint8)).save(
                         os.path.join(self.decoded_output_path, f"image_{idx}_original.png"))
 
@@ -138,4 +140,4 @@ class DirectionModelInference:
 
 if __name__ == "__main__":
     image_decoder = DirectionModelInference(OmegaConf.load('dl_project/configs/direction_model_inference.yaml')['inference'])
-    image_decoder.edit(2)
+    image_decoder.edit(0)

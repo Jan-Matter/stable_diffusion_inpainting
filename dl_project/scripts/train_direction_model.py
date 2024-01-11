@@ -9,6 +9,7 @@ from pytorch_lightning import seed_everything
 import random
 from tqdm import tqdm
 from torch.nn import MSELoss
+from torch.nn import functional as F
 
 from pathlib import Path
 import sys
@@ -111,7 +112,7 @@ class DirectionModelTrainer:
         # [batch_size, noised_image_enc_length] -> [batch_size, direction_count, noised_image_enc_length]
         noised_images_enc = noised_images_enc.reshape(self.batch_size, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
-        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 16, 16)
+        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 32, 32)
         
         # [batch_size, caption_enc_length] -> [batch_size, direction_count, caption_enc_length]
         directions = self.direction_model(caption_enc_reshaped)
