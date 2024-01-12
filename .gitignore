@@ -5,3 +5,4 @@ models/
 pyenv/
 dl_project/data/
 data/lsun_church/*
+data/
