@@ -1,7 +1,7 @@
 inference:
   seed: 42
   device: cuda
-  strength: 0.8
+  strength: 0.05
   ddim_steps: 50
   ddim_eta: 0.0
   scale: 5.0
@@ -14,11 +14,11 @@ inference:
 
   model:
     direction_model:
-      path: dl_project/trained_models/direction_model_v1.pt
+      path: dl_project/trained_models/direction_model.pt
       direction_count: 3
       c_length: 3840
-      depth: 1
-      alpha: 0.1
+      depth: 2
+      alpha: 0.35
       normalize: true
       bias: true
       batchnorm: true

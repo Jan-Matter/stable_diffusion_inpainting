@@ -1,11 +1,11 @@
 training:
   train_size: 0.8
   batch_size: 3
-  epochs: 100
+  epochs: 1000
   lr: 0.001
   seed: 42
   device: cuda
-  strength: 0.8
+  strength: 0.05
   ddim_steps: 50
   ddim_eta: 0.0
   scale: 5.0
@@ -26,7 +26,7 @@ training:
       direction_count: 3
       c_length: 3840
       depth: 2
-      alpha: 0.1
+      alpha: 0.35
       normalize: true
       bias: true
       batchnorm: true

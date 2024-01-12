@@ -6,8 +6,6 @@ from pathlib import Path
 from omegaconf import OmegaConf
 
 from ax.service.ax_client import AxClient, ObjectiveProperties
-from ax.service.utils.report_utils import exp_to_df
-from ax.utils.notebook.plotting import init_notebook_plotting, render
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -25,8 +23,8 @@ class DirectionModelTuning:
             objectives={"loss": ObjectiveProperties(minimize=True)}
         )
         self.__training_epochs = tuning_conf["epochs"]
-        self.__training_conf["training"]["model"]["direction_model"]["path"] = tuning_conf["model_state_path"]
-        self.__training_conf["training"]["epochs"] = self.__training_epochs
+        self.__training_conf["model"]["direction_model"]["path"] = tuning_conf["model_state_path"]
+        self.__training_conf["epochs"] = self.__training_epochs
         
     
     def get_best_parameters(self):
@@ -52,7 +50,10 @@ class DirectionModelTuning:
     
     def train_evaluate(self, parameters):
 
-        self.__training_conf["training"]["lr"] = int(parameters["lr"])
+        self.__training_conf["lr"] = int(parameters["lr"])
+        self.__training_conf["model"]["direction_model"]["depth"] = int(parameters["depth"])
+        self.__training_conf["model"]["direction_model"]["alpha"] = parameters["alpha"]
+        self.__training_conf["strength"] = parameters["strength"]
 
         training = DirectionModelTrainer(configs=self.__training_conf)
         validation = DirectionModelValidator(configs=self.__training_conf)
@@ -77,40 +78,40 @@ class DirectionModelTuning:
     
 
 if __name__ == '__main__':
-    training_conf_path = Path('dl_project/configs/direction_model_trainging.yaml')
+    training_conf_path = Path('dl_project/configs/direction_model_training.yaml')
     tuning_conf_path = Path('dl_project/configs/direction_model_tuning.yaml')
 
 
     tuning_conf = OmegaConf.load(tuning_conf_path)['tuning']
-    training_conf = OmegaConf.load(tuning_conf_path)['training']
+    training_conf = OmegaConf.load(training_conf_path)['training']
 
     tuning_state_path = Path(tuning_conf['tuning_state_path'])
 
     exp_params = [
                 {
-                    "name": "out_channels",
+                    "name": "depth",
                     "type": "range",
-                    "bounds": [1, 100],
+                    "bounds": [1, 2],
+                    "log_scale": False
+                },
+                {
+                    "name": "alpha",
+                    "type": "range",
+                    "bounds": [0.001, 0.5],
                     "log_scale": False
                 },
                 {
                     "name": "lr",
                     "type": "range",
-                    "bounds": [0.00001, 0.1],
+                    "bounds": [0.000001, 0.1],
                     "log_scale": True
                 },
                 {
-                    "name": "spatial_out_channels",
+                    "name": "strength",
                     "type": "range",
-                    "bounds": [1, 100],
+                    "bounds": [0.01, 0.3],
                     "log_scale": False
-                },
-                {
-                    "name": "temporal_out_channels",
-                    "type": "range",
-                    "bounds": [1, 100],
-                    "log_scale": False
-                }   
+                }
                 
     ]
 

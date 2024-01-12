@@ -24,6 +24,7 @@ ax-platform==0.2.10
 remote-pdb==2.1.0
 tensorflow==2.15.0
 tensorflow-datasets==4.9.4
+SQLAlchemy==1.4.17
 -e git+https://github.com/CompVis/taming-transformers.git@master#egg=taming-transformers
 -e git+https://github.com/openai/CLIP.git@main#egg=clip
 -e .

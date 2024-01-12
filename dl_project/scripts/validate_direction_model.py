@@ -80,7 +80,7 @@ class DirectionModelValidator:
         # [batch_size, noised_image_enc_length] -> [batch_size, direction_count, noised_image_enc_length]
         noised_images_enc = noised_images_enc.reshape(self.batch_size, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
-        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 16, 16)
+        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 32, 32)
         
         # [batch_size, caption_enc_length] -> [batch_size, direction_count, caption_enc_length]
         directions = self.direction_model(caption_enc_reshaped)
@@ -158,4 +158,4 @@ class DirectionModelValidator:
 
 if __name__ == "__main__":
     validator = DirectionModelValidator(OmegaConf.load('dl_project/configs/direction_model_training.yaml')['training'])
-    validator.validate()
+    print(validator.validate())
