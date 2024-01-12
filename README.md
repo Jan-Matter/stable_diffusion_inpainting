@@ -19,7 +19,7 @@ call
 download model:
 - mkdir models/ldm/stable-diffusion-v1
 - wget -O models/ldm/stable-diffusion-v1/model.ckpt https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt
-download LSUN church dataset:
+download LSUN church dataset (download it locally and transfer it to the cluster to avoid exceeding the disk quota):
 - mkdir data/lsun_church
 - python dl_project/download.py --out_dir "data/lsun_church" --category church_outdoor [-l sample limit]
 

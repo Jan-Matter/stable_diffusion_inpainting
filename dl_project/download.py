@@ -43,33 +43,32 @@ def download(out_dir, category, set_name, data_entry_limit):
     print("\nExtracting", category, set_name, "set")
     subprocess.call(cmd)
 
-    remove(out_path)
-
     db_path = path.abspath(out_path)[0:-4]
 
     with lmdb.open(db_path, max_readers=1, map_size=int(3e9)) as env:
         txn = env.begin(write=True)
-        db = txn.cursor()
-
         length = txn.stat()["entries"]
 
         if length <= data_entry_limit:
             return
 
-        db = txn.cursor()
-
         # Iterate through the first n entries and delete them
         count = 0
-        for _, _ in db:
-            if count < (length - data_entry_limit):
-                db.delete()
-                count += 1
-            else:
-                break
+
+        while count < (length - data_entry_limit):
+            db = txn.cursor()
+
+            while db.next():
+                if count < (length - data_entry_limit):
+                    db.delete()
+                    count += 1
+                else:
+                    break
+
+            db.close()
 
         # Commit the transaction and close the environment
         txn.commit()
-        db.close()
 
         print("\nCompacting", category, set_name, "set")
 
@@ -86,7 +85,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--out_dir", default="")
     parser.add_argument("-c", "--category", default=None)
-    parser.add_argument("-l", "--limit", type=int, default=40_000)
+    parser.add_argument("-l", "--limit", type=int, default=46_000)
     args = parser.parse_args()
 
     categories = list_categories()
