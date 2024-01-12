@@ -3,4 +3,4 @@
 *.pyc
 models/
 pyenv/
-dl_project/data
+data/
