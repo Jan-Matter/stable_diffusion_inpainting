@@ -3,4 +3,5 @@
 *.pyc
 models/
 pyenv/
-dl_project/data
+dl_project/data/
+data/lsun_church/*
