@@ -73,12 +73,12 @@ class DirectionModelValidator:
         caption_enc = caption_enc[:, :token_count, :].repeat(self.batch_size, 1, 1)
         caption_enc_reshaped = caption_enc.reshape(self.batch_size, -1)
 
-        noised_images_enc = self.ldm_model.get_first_stage_encoding(
+        noised_images_enc_orig = self.ldm_model.get_first_stage_encoding(
             self.ldm_model.encode_first_stage(images)
         )
 
         # [batch_size, noised_image_enc_length] -> [batch_size, direction_count, noised_image_enc_length]
-        noised_images_enc = noised_images_enc.reshape(self.batch_size, 1, -1)
+        noised_images_enc = noised_images_enc_orig.reshape(self.batch_size, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
         noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 32, 32)
         
@@ -92,23 +92,32 @@ class DirectionModelValidator:
 
         directions = torch.cat([directions, captions_enc_rest], dim=2)
 
+        orig_caption_enc = captions_enc[0]
+        
         # apply stable diffusion model to input images
         features = []
         for batch_idx in range(self.batch_size):
             batch_features = []
+            with torch.no_grad():
+                noised_image_enc_orig = noised_images_enc_orig[batch_idx]
+                noised_image_enc_orig = noised_image_enc_orig.unsqueeze(0)
+                orig_decoded_samples = self.__decode(noised_image_enc_orig, orig_caption_enc)
             for direction_idx in range(self.direction_count):
                 noised_image_enc = noised_images_enc[batch_idx * self.direction_count + direction_idx]
                 noised_image_enc = noised_image_enc.unsqueeze(0)
                 direction = directions[batch_idx, direction_idx]
                 direction = direction.unsqueeze(0)
 
-                if batch_idx != self.batch_size - 1 or batch_idx % self.direction_count != direction_idx:
+                if self.run_nr % self.batch_size != batch_idx or self.run_nr % self.direction_count != direction_idx:
                     # this is necessary to keep the memory usage in bounds
                     with torch.no_grad():
                         decoded_samples = self.__decode(noised_image_enc, direction)
+                        decoded_samples = decoded_samples.detach()
                 else:
                     decoded_samples = self.__decode(noised_image_enc, direction)
-                batch_features.append(decoded_samples)
+
+                self.run_nr += 1
+                batch_features.append(torch.sub(decoded_samples, orig_decoded_samples))
             batch_features = torch.stack(batch_features)
             features.append(batch_features)
         features = torch.stack(features)
