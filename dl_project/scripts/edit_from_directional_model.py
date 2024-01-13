@@ -140,4 +140,4 @@ class DirectionModelInference:
 
 if __name__ == "__main__":
     image_decoder = DirectionModelInference(OmegaConf.load('dl_project/configs/direction_model_inference.yaml')['inference'])
-    image_decoder.edit(2)
+    image_decoder.edit(0)

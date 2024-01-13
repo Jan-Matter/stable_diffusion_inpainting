@@ -36,11 +36,12 @@ class DirectionModelTuning:
         }
         return output
     
-    def run_tuning(self, total_trials):
+    def run_tuning(self, total_trials, tuning_state_path):
         for i in range(total_trials):
             parameters, trial_index = self.__ax_client.get_next_trial()
             # Local evaluation here can be replaced with deployment to external system.
             self.__ax_client.complete_trial(trial_index=trial_index, raw_data=self.train_evaluate(parameters))
+            self.save_tuning_state(tuning_state_path)
     
     def save_tuning_state(self, path):
         self.__ax_client.save_to_json_file(path)
@@ -112,13 +113,11 @@ if __name__ == '__main__':
                     "bounds": [0.01, 0.3],
                     "log_scale": False
                 }
-                
     ]
 
     tuning = DirectionModelTuning(exp_params, training_conf, tuning_conf)
     if os.path.exists(tuning_state_path):
         tuning.load_tuning_state(tuning_state_path)
-    tuning.run_tuning(10)
-    tuning.save_tuning_state(tuning_state_path)
+    tuning.run_tuning(10, tuning_state_path)
     print(tuning.get_best_parameters())
 

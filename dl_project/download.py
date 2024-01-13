@@ -85,7 +85,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--out_dir", default="")
     parser.add_argument("-c", "--category", default=None)
-    parser.add_argument("-l", "--limit", type=int, default=46_000)
+    parser.add_argument("-l", "--limit", type=int, default=1000000) #default=46_000)
     args = parser.parse_args()
 
     categories = list_categories()
