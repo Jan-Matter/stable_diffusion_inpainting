@@ -42,12 +42,15 @@ class DirectionModelTrainer:
         self.optimizer = torch.optim.SGD([*self.direction_model.parameters(), *self.ldm_model.parameters()], lr=configs['lr'])
         self.direction_model.to(self.device)
 
-        #dataset = ImageCaptionDataset(configs['dataset'], training=True) #TODO change to to true when dataset is ready
-        dataset = CustomImageCaptionDataset(configs['dataset'], training=True)
-        #dataset = torch.utils.data.Subset(dataset, range(105))
+        if configs['dataset']['name'] == "maskara":
+            dataset = CustomImageCaptionDataset(configs['dataset'], training=True)
+        else:
+            dataset = ImageCaptionDataset(configs['dataset'], training=True)
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
-        #train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
+        if dataset.__len__() > train_size:
+            dataset = torch.utils.data.Subset(dataset, range(105))
+            train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
         train_dataset = dataset
         val_dataset = dataset
         self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)

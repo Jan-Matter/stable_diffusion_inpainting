@@ -39,8 +39,10 @@ class DirectionModelInference:
         self.ldm_sampler.make_schedule(ddim_num_steps=self.ddim_steps, ddim_eta=self.ddim_eta, verbose=False)
         self.direction_model.to(self.device).half()
 
-        #dataset = ImageCaptionDataset(configs['dataset'], training=False)
-        dataset = CustomImageCaptionDataset(configs['dataset'], training=False)
+        if configs['dataset']['name'] == "maskara":
+            dataset = CustomImageCaptionDataset(configs['dataset'], training=False)
+        else:
+            dataset = ImageCaptionDataset(configs['dataset'], training=False)
         self.dataset = torch.utils.data.Subset(dataset, range(100))
 
         #defaults: strength = 0.8 and ddim_steps = 50 and scale = 5.0
@@ -148,4 +150,4 @@ class DirectionModelInference:
 
 if __name__ == "__main__":
     image_decoder = DirectionModelInference(OmegaConf.load('dl_project/configs/direction_model_inference.yaml')['inference'])
-    image_decoder.edit(0)
+    image_decoder.edit(1, caption=None)
