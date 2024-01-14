@@ -20,6 +20,7 @@ from ldm.models.diffusion.ddim import DDIMSampler
 
 from dl_project.direction_models.direction_model import DirectionModel
 from dl_project.datasets.image_caption_dataset import ImageCaptionDataset
+from dl_project.datasets.custom_caption_dataset import CustomImageCaptionDataset
 
 class DirectionModelInference:
      
@@ -36,9 +37,10 @@ class DirectionModelInference:
         self.ddim_steps = configs['ddim_steps']
         self.ddim_eta = configs['ddim_eta']
         self.ldm_sampler.make_schedule(ddim_num_steps=self.ddim_steps, ddim_eta=self.ddim_eta, verbose=False)
-        self.direction_model.to(self.device)
+        self.direction_model.to(self.device).half()
 
-        dataset = ImageCaptionDataset(configs['dataset'], training=False)
+        #dataset = ImageCaptionDataset(configs['dataset'], training=False)
+        dataset = CustomImageCaptionDataset(configs['dataset'], training=False)
         self.dataset = torch.utils.data.Subset(dataset, range(100))
 
         #defaults: strength = 0.8 and ddim_steps = 50 and scale = 5.0
@@ -49,10 +51,14 @@ class DirectionModelInference:
         seed_everything(configs['seed'])
 
 
-    def edit(self, idx):
+    def edit(self, idx, caption=None):
         x = self.dataset[idx]
         image = x['image'].to(self.device).unsqueeze(0)
         caption = x['caption']
+        #caption = ["Apply lipstick to lips."]
+        #caption = [""]
+        if caption is not None:
+            caption = [caption]
 
         orig_caption_enc = self.ldm_model.get_learned_conditioning(caption)
         token_count = self.configs['model']['direction_model']['c_length'] // 768
@@ -66,11 +72,13 @@ class DirectionModelInference:
         )
         noised_images_enc = noised_images_enc.reshape(1, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
-        noised_images_enc = noised_images_enc.reshape(1 * self.direction_count, 4, 32, 32)
+        noised_images_enc = noised_images_enc.reshape(1 * self.direction_count, 4, 64, 64)
 
         
         # [batch_size, caption_enc_length] -> [batch_size, direction_count, caption_enc_length]
+        caption_enc_reshaped = caption_enc_reshaped.half()
         directions = self.direction_model(caption_enc_reshaped)
+        directions = directions.float()
         directions = directions.reshape(batch_size, self.direction_count, -1)
         directions = directions[0]
 

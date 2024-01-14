@@ -54,6 +54,15 @@ Jan
 - train on celeb -> compare results with church results
 
 
+Result/home/matterj/codebases/stable_diffusion_inpainting/datas without working solution:
+
+- Coding force results - alter params see if we get something
+- use different dataset cifar-100 -> faces -> uniform datasets
+- push alpha lr and strength to limits -> graph on influence of each also visually
+- datasetsize influence 1.
+- Churches compared to edit paper
+
+
 
 
 

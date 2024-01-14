@@ -1,4 +1,4 @@
 tuning:
   model_state_path: dl_project/tuning/direction_model.pt
   tuning_state_path: dl_project/tuning/tuning_state_v1.json
-  epochs: 5
+  epochs: 30

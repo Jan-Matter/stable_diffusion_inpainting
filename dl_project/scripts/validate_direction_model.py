@@ -20,6 +20,7 @@ from ldm.models.diffusion.ddim import DDIMSampler
 from dl_project.direction_models.direction_model import DirectionModel
 from dl_project.loss.contrastive_loss import ContrastiveLoss
 from dl_project.datasets.image_caption_dataset import ImageCaptionDataset
+from dl_project.datasets.custom_caption_dataset import CustomImageCaptionDataset
 
 class DirectionModelValidator:
      
@@ -38,7 +39,8 @@ class DirectionModelValidator:
         self.optimizer = torch.optim.Adam(self.direction_model.parameters(), lr=configs['lr'])
         self.direction_model.to(self.device)
 
-        dataset = ImageCaptionDataset(configs['dataset'], training=False)
+        #dataset = ImageCaptionDataset(configs['dataset'], training=False)
+        dataset = CustomImageCaptionDataset(configs['dataset'], training=False)
         dataset = torch.utils.data.Subset(dataset, range(30))
         self.batch_size = configs['batch_size']
         self.val_loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
@@ -49,6 +51,7 @@ class DirectionModelValidator:
         self.t_enc = int(configs['strength'] * configs['ddim_steps'])
         self.scale = configs['scale']
         self.uc = self.ldm_model.get_learned_conditioning([""]).requires_grad_(True).to(self.device)
+
 
 
     
@@ -95,6 +98,8 @@ class DirectionModelValidator:
         orig_caption_enc = captions_enc[0]
         
         # apply stable diffusion model to input images
+        rand1 = random.randint(0, self.batch_size - 1)
+        rand2 = random.randint(0, self.direction_count - 1)
         features = []
         for batch_idx in range(self.batch_size):
             batch_features = []
@@ -108,7 +113,7 @@ class DirectionModelValidator:
                 direction = directions[batch_idx, direction_idx]
                 direction = direction.unsqueeze(0)
 
-                if self.run_nr % self.batch_size != batch_idx or self.run_nr % self.direction_count != direction_idx:
+                if rand1 % self.batch_size != batch_idx or self.run2 % self.direction_count != direction_idx:
                     # this is necessary to keep the memory usage in bounds
                     with torch.no_grad():
                         decoded_samples = self.__decode(noised_image_enc, direction)
@@ -116,7 +121,6 @@ class DirectionModelValidator:
                 else:
                     decoded_samples = self.__decode(noised_image_enc, direction)
 
-                self.run_nr += 1
                 batch_features.append(torch.sub(decoded_samples, orig_decoded_samples))
             batch_features = torch.stack(batch_features)
             features.append(batch_features)

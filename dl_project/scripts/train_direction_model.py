@@ -22,6 +22,7 @@ from ldm.models.diffusion.ddim import DDIMSampler
 from dl_project.direction_models.direction_model import DirectionModel
 from dl_project.loss.contrastive_loss import ContrastiveLoss
 from dl_project.datasets.image_caption_dataset import ImageCaptionDataset
+from dl_project.datasets.custom_caption_dataset import CustomImageCaptionDataset
 
 class DirectionModelTrainer:
      
@@ -32,19 +33,23 @@ class DirectionModelTrainer:
         self.direction_count = configs['model']['direction_model']['direction_count']
         self.direction_model = DirectionModel(**configs['model']['direction_model'])
         self.ldm_model = self.__load_model_from_config(configs['model']['ldm_model'])
+
         self.ldm_sampler = DDIMSampler(self.ldm_model)
         self.ddim_steps = configs['ddim_steps']
         self.ddim_eta = configs['ddim_eta']
         self.ldm_sampler.make_schedule(ddim_num_steps=self.ddim_steps, ddim_eta=self.ddim_eta, verbose=False)
         self.loss = ContrastiveLoss(**configs['loss'])
-        self.optimizer = torch.optim.Adam(self.direction_model.parameters(), lr=configs['lr'])
+        self.optimizer = torch.optim.SGD([*self.direction_model.parameters(), *self.ldm_model.parameters()], lr=configs['lr'])
         self.direction_model.to(self.device)
 
-        dataset = ImageCaptionDataset(configs['dataset'], training=True) #TODO change to to true when dataset is ready
-        dataset = torch.utils.data.Subset(dataset, range(105))
+        #dataset = ImageCaptionDataset(configs['dataset'], training=True) #TODO change to to true when dataset is ready
+        dataset = CustomImageCaptionDataset(configs['dataset'], training=True)
+        #dataset = torch.utils.data.Subset(dataset, range(105))
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
-        train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
+        #train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
+        train_dataset = dataset
+        val_dataset = dataset
         self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
         self.epochs = configs['epochs']
@@ -57,8 +62,6 @@ class DirectionModelTrainer:
         self.scale = configs['scale']
         self.uc = self.ldm_model.get_learned_conditioning([""]).requires_grad_(True).to(self.device)
 
-        self.run_nr = 0
-
         seed_everything(configs['seed'])
 
 
@@ -68,13 +71,17 @@ class DirectionModelTrainer:
             self.direction_model.train()
             for batch_idx, x in tqdm(enumerate(self.train_loader)):
                 self.optimizer.zero_grad()
-                torch.cuda.empty_cache()
+                torch.cuda.empty_cache()  # Empty GPU cache before forward pass
                 loss = self.__get_batch_loss(x)
-                torch.cuda.empty_cache()
+                torch.cuda.empty_cache()  # Empty GPU cache before backward pass
                 loss.backward()
+                torch.cuda.empty_cache()  # Empty GPU cache after backward pass
                 self.optimizer.step()
+                loss = loss.detach()
+                torch.cuda.empty_cache()  # Empty GPU cache before optimizer step
                 #if batch_idx % 100 == 0:
                 print(f'Epoch {epoch}, Batch {batch_idx}, Loss {loss.item()}')
+            
             val_loss = self.validate()
 
             self.val_losses.append(val_loss)
@@ -85,6 +92,7 @@ class DirectionModelTrainer:
                 self.best_loss = val_loss
                 print(f"Saving model with validation loss {val_loss}")
                 torch.save(self.direction_model.state_dict(), self.model_save_path)
+            
     
     def validate(self):
         self.direction_model.eval()
@@ -97,7 +105,7 @@ class DirectionModelTrainer:
     
 
     def __get_batch_loss(self, x):
-        images = x['image'].to(self.device)
+        images = x['image'].to(self.device).requires_grad_(False)
         captions = x['caption']
         captions_enc = [self.ldm_model.get_learned_conditioning([caption]) for caption in captions]
         #since all captions are the same, we can just take the first
@@ -107,9 +115,10 @@ class DirectionModelTrainer:
         caption_enc = caption_enc[:, :token_count, :].repeat(self.batch_size, 1, 1)
         caption_enc_reshaped = caption_enc.reshape(self.batch_size, -1)
 
-        noised_images_enc_orig = self.ldm_model.get_first_stage_encoding(
-            self.ldm_model.encode_first_stage(images)
-        )
+        with torch.no_grad():
+            noised_images_enc_orig = self.ldm_model.get_first_stage_encoding(
+                self.ldm_model.encode_first_stage(images)
+            )
 
         # [batch_size, noised_image_enc_length] -> [batch_size, direction_count, noised_image_enc_length]
         noised_images_enc = noised_images_enc_orig.reshape(self.batch_size, 1, -1)
@@ -130,27 +139,24 @@ class DirectionModelTrainer:
         
         # apply stable diffusion model to input images
         features = []
+
+        rand1 = random.randint(0, self.batch_size - 1)
+        rand2 = random.randint(0, self.direction_count - 1)
         for batch_idx in range(self.batch_size):
             batch_features = []
             with torch.no_grad():
-                noised_image_enc_orig = noised_images_enc_orig[batch_idx]
-                noised_image_enc_orig = noised_image_enc_orig.unsqueeze(0)
-                orig_decoded_samples = self.__decode(noised_image_enc_orig, orig_caption_enc)
+                noised_image_enc_orig = noised_images_enc_orig[batch_idx].unsqueeze(0)
+                orig_decoded_samples = self.__decode(noised_image_enc_orig, orig_caption_enc).detach()
             for direction_idx in range(self.direction_count):
-                noised_image_enc = noised_images_enc[batch_idx * self.direction_count + direction_idx]
-                noised_image_enc = noised_image_enc.unsqueeze(0)
-                direction = directions[batch_idx, direction_idx]
-                direction = direction.unsqueeze(0)
+                noised_image_enc = noised_images_enc[batch_idx * self.direction_count + direction_idx].unsqueeze(0)
+                direction = directions[batch_idx, direction_idx].unsqueeze(0)
 
-                if self.run_nr % self.batch_size != batch_idx or self.run_nr % self.direction_count != direction_idx:
+                if rand1 % self.batch_size != batch_idx or rand2 % self.direction_count != direction_idx:
                     # this is necessary to keep the memory usage in bounds
                     with torch.no_grad():
-                        decoded_samples = self.__decode(noised_image_enc, direction)
-                        decoded_samples = decoded_samples.detach()
+                        decoded_samples = self.__decode(noised_image_enc, direction).detach()
                 else:
-                    decoded_samples = self.__decode(noised_image_enc, direction)
-
-                self.run_nr += 1
+                    decoded_samples = self.__decode(noised_image_enc, direction, requires_grad=True)
                 batch_features.append(torch.sub(decoded_samples, orig_decoded_samples))
             batch_features = torch.stack(batch_features)
             features.append(batch_features)
@@ -170,7 +176,7 @@ class DirectionModelTrainer:
         loss = self.loss(reshaped_features, group_indices)
         return loss
 
-    def __decode(self, z, c):
+    def __decode(self, z, c, requires_grad=False):
         with self.ldm_model.ema_scope():
 
             # encode (scaled latent)

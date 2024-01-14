@@ -1,16 +1,16 @@
 inference:
   seed: 42
   device: cuda
-  strength: 0.05
+  strength: 0.4
   ddim_steps: 50
   ddim_eta: 0.0
   scale: 5.0
   decoded_output_path: dl_project/output/direction_model_inference
 
   dataset:
-    name: lsun_church
-    resize_w: 256
-    resize_h: 256
+    name: maskara
+    resize_w: 512
+    resize_h: 512
 
   model:
     direction_model:
