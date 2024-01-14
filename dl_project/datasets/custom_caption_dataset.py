@@ -30,6 +30,8 @@ class CustomImageCaptionDataset:
     def __len__(self):
         if self.configs["name"] == "maskara":
             return len(list(Path("data/custom_datasets/maskara_3").glob("*.jpg")))
+        elif self.configs["name"] == "church_edits":
+            return len(list(Path("data/custom_datasets/churches_edits").glob("*.jpg")))
 
     def __getitem__(self, idx):
         caption = self.__get_caption(idx)
@@ -51,10 +53,19 @@ class CustomImageCaptionDataset:
     def __get_caption(self, idx):
         if self.configs["name"] == "maskara":
             return "A photo of a man"
+        elif self.configs["name"] == "church_edits":
+            return "A photo of a church exterior"
     
     def __get_image(self, idx):
         if self.configs["name"] == "maskara":
             img_folder_path = "data/custom_datasets/maskara_3"
+            img_paths = list(Path(img_folder_path).glob("*.jpg"))
+            img_path = img_paths[idx]
+            image = PIL.Image.open(img_path)
+            transformed_image = self.__transform_img(image)
+            return transformed_image
+        elif self.configs["name"] == "church_edits":
+            img_folder_path = "data/custom_datasets/churches_edits"
             img_paths = list(Path(img_folder_path).glob("*.jpg"))
             img_path = img_paths[idx]
             image = PIL.Image.open(img_path)

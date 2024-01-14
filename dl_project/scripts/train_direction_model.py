@@ -39,10 +39,13 @@ class DirectionModelTrainer:
         self.ddim_eta = configs['ddim_eta']
         self.ldm_sampler.make_schedule(ddim_num_steps=self.ddim_steps, ddim_eta=self.ddim_eta, verbose=False)
         self.loss = ContrastiveLoss(**configs['loss'])
-        self.optimizer = torch.optim.SGD([*self.direction_model.parameters(), *self.ldm_model.parameters()], lr=configs['lr'])
+        if self.configs['optimizer'] == "adam":
+            self.optimizer = torch.optim.Adam([*self.direction_model.parameters(), *self.ldm_model.parameters()], lr=configs['lr'])
+        elif self.configs['optimizer'] == "sgd":
+            self.optimizer = torch.optim.SGD([*self.direction_model.parameters(), *self.ldm_model.parameters()], lr=configs['lr'])
         self.direction_model.to(self.device)
 
-        if configs['dataset']['name'] == "maskara":
+        if configs['dataset']['name'] == "maskara" or configs['dataset']['name'] == "church_edits":
             dataset = CustomImageCaptionDataset(configs['dataset'], training=True)
         else:
             dataset = ImageCaptionDataset(configs['dataset'], training=True)

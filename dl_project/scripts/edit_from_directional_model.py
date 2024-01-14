@@ -39,7 +39,7 @@ class DirectionModelInference:
         self.ldm_sampler.make_schedule(ddim_num_steps=self.ddim_steps, ddim_eta=self.ddim_eta, verbose=False)
         self.direction_model.to(self.device).half()
 
-        if configs['dataset']['name'] == "maskara":
+        if configs['dataset']['name'] == "maskara" or configs['dataset']['name'] == "church_edits":
             dataset = CustomImageCaptionDataset(configs['dataset'], training=False)
         else:
             dataset = ImageCaptionDataset(configs['dataset'], training=False)
@@ -53,14 +53,14 @@ class DirectionModelInference:
         seed_everything(configs['seed'])
 
 
-    def edit(self, idx, caption=None):
+    def edit(self, idx, caption_input=None):
         x = self.dataset[idx]
         image = x['image'].to(self.device).unsqueeze(0)
         caption = x['caption']
         #caption = ["Apply lipstick to lips."]
         #caption = [""]
-        if caption is not None:
-            caption = [caption]
+        if caption_input is not None:
+            caption = [caption_input]
 
         orig_caption_enc = self.ldm_model.get_learned_conditioning(caption)
         token_count = self.configs['model']['direction_model']['c_length'] // 768
@@ -150,4 +150,4 @@ class DirectionModelInference:
 
 if __name__ == "__main__":
     image_decoder = DirectionModelInference(OmegaConf.load('dl_project/configs/direction_model_inference.yaml')['inference'])
-    image_decoder.edit(1, caption=None)
+    image_decoder.edit(1, caption_input="A landscape in winter")
