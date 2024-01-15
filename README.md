@@ -13,9 +13,9 @@ Setup of Project in Cluster (Described with VSCode)
 - cd into project
 
 call
-- python3 -m venv pyenv
-- source ./pyenv/bin/activate
-- python -m pip install -r requirements.txt
+- conda env create -f environment.yaml
+- conda activate deepl
+- alternative to prior two lines: python -m pip install -r requirements.txt at least python 3.10.12 has to be installed
 download model:
 - mkdir models/ldm/stable-diffusion-v1
 - wget -O models/ldm/stable-diffusion-v1/model.ckpt https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt

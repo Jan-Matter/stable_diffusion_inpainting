@@ -162,7 +162,7 @@ def run_experiment_4(training=True):
         training_confs['strength'] = 0.2
         training_confs['scale'] = 25.0
         training_confs['train_size'] = 1.0
-        training_confs['epochs'] = 100
+        training_confs['epochs'] = 1
         training_confs['val_loss_path'] = 'dl_project/output/val_loss_v3_church_edits.npy'
         training_confs['dataset']['name'] = 'church_edits'
         training_confs['model']['direction_model']['path'] = 'dl_project/trained_models/direction_model_v3_church_edits.pt'
@@ -210,6 +210,20 @@ def main(training=True):
     if training:
         trainer = DirectionModelTrainer(OmegaConf.load('dl_project/configs/direction_model_training.yaml')['training'])
         trainer.train()
+    
+    if not os.path.exists("dl_project/trained_models"):
+        os.makedirs("dl_project/trained_models")
+    
+    if not os.path.exists("dl_project/output/experiment1"):
+        os.makedirs("dl_project/output/experiment1")
+    if not os.path.exists("dl_project/output/experiment2"):
+        os.makedirs("dl_project/output/experiment2")
+    if not os.path.exists("dl_project/output/experiment3"):
+        os.makedirs("dl_project/output/experiment3")
+    if not os.path.exists("dl_project/output/experiment4"):
+        os.makedirs("dl_project/output/experiment4")
+
+
 
     run_experiment_1()
     run_experiment_2()
