@@ -1,21 +1,21 @@
 training:
   train_size: 1.0
   batch_size: 3
-  epochs: 10000
+  epochs: 100
   lr: 0.001
   seed: 42
   device: cuda
-  strength: 0.5
-  optimizer: adam
+  strength: 0.2
+  optimizer: sgd
   ddim_steps: 50
   ddim_eta: 0.0
-  scale: 5.0
-  val_loss_path : dl_project/output/val_loss_v1_churches.npy
+  scale: 25.0
+  val_loss_path : dl_project/output/val_loss_v1.npy
 
   dataset:
-    name: lsun_church
-    resize_w: 256
-    resize_h: 256
+    name: maskara
+    resize_w: 512
+    resize_h: 512
   
   loss:
     abs: true
@@ -23,7 +23,7 @@ training:
 
   model:
     direction_model:
-      path: dl_project/trained_models/direction_model_churches.pt
+      path: dl_project/trained_models/direction_model_v1.pt
       direction_count: 3
       c_length: 3840
       depth: 2

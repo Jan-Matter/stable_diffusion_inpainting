@@ -4,17 +4,17 @@ inference:
   strength: 0.2
   ddim_steps: 50
   ddim_eta: 0.0
-  scale: 5.0
+  scale: 25.0
   decoded_output_path: dl_project/output/direction_model_inference
 
   dataset:
-    name: maskara
+    name: church_edits
     resize_w: 512
     resize_h: 512
 
   model:
     direction_model:
-      path: dl_project/trained_models/direction_model_low.pt
+      path: dl_project/trained_models/direction_model_v1.pt
       direction_count: 3
       c_length: 3840
       depth: 2

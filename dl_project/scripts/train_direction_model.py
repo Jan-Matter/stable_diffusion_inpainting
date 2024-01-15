@@ -51,11 +51,12 @@ class DirectionModelTrainer:
             dataset = ImageCaptionDataset(configs['dataset'], training=True)
         train_size = int(configs['train_size'] * len(dataset))
         self.batch_size = configs['batch_size']
-        if dataset.__len__() > train_size:
+        if len(dataset) >= 105:
             dataset = torch.utils.data.Subset(dataset, range(105))
             train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
-        train_dataset = dataset
-        val_dataset = dataset
+        else:
+            train_dataset = dataset
+            val_dataset = dataset
         self.train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
         self.epochs = configs['epochs']
@@ -129,7 +130,7 @@ class DirectionModelTrainer:
         # [batch_size, noised_image_enc_length] -> [batch_size, direction_count, noised_image_enc_length]
         noised_images_enc = noised_images_enc_orig.reshape(self.batch_size, 1, -1)
         noised_images_enc = noised_images_enc.repeat(1, self.direction_count, 1)
-        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 32, 32)
+        noised_images_enc = noised_images_enc.reshape(self.batch_size * self.direction_count, 4, 64, 64)
         
         # [batch_size, caption_enc_length] -> [batch_size, direction_count, caption_enc_length]
         directions = self.direction_model(caption_enc_reshaped)
