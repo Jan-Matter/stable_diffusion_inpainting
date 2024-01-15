@@ -211,12 +211,12 @@ def main(training=True):
         trainer = DirectionModelTrainer(OmegaConf.load('dl_project/configs/direction_model_training.yaml')['training'])
         trainer.train()
 
-    #run_experiment_1()
-    #run_experiment_2()
-    #run_experiment_3()
+    run_experiment_1()
+    run_experiment_2()
+    run_experiment_3()
     run_experiment_4(training=training)
 
 
 if __name__ == "__main__":
-    main(training=False)
+    main(training=True)
 
