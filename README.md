@@ -21,7 +21,7 @@ download model:
 - wget -O models/ldm/stable-diffusion-v1/model.ckpt https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt
 download LSUN church dataset (download it locally and transfer it to the cluster to avoid exceeding the disk quota):
 - mkdir data/lsun_church
-- python dl_project/download.py --out_dir "data/lsun_church" --category church_outdoor [-l sample limit]
+- python dl_project/download.py --out_dir "data/lsun_church" --category church_outdoor [-l sample limit (not stable)]
 
 To run script:
 srun --pty -A deep_learning -G 1 -t 60 bash ./scripts/edit.sh
@@ -31,36 +31,8 @@ interactive shell (use with care stop session after you don't use it anymore to 
 srun --pty -A deep_learning -G 1 -t 60 bash
 
 
-
-
-
-Meeting Notes 5.1.2024
-
-- Fit Dataset
-    - Download it during Running
-    - Ask TAs for TMP Space
-    - Kaggle
-    - TMP DIR
-    - Conclusion for now transform dataset locally to fit it on disk and document process (Andras)
-    - Debug Celeb (Ning)
-
-- Writing Report (Ning, Arvid)
-    - Write Sections as far as possible with curren knowledge
-    - Read Related work
-
-Jan
-- hyperparam tuning on church
-- training on church -> do edits check results
-- train on celeb -> compare results with church results
-
-
-Result/home/matterj/codebases/stable_diffusion_inpainting/datas without working solution:
-
-- Coding force results - alter params see if we get something
-- use different dataset cifar-100 -> faces -> uniform datasets
-- push alpha lr and strength to limits -> graph on influence of each also visually
-- datasetsize influence 1.
-- Churches compared to edit paper
+## Reproduce results:
+run python dl_project/scripts/reproduce_results.py, the output images will be added to dl_project/output/experiment1...4
 
 
 
